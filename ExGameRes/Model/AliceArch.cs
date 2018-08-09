@@ -49,7 +49,6 @@ namespace ExGameRes.Model
             if (result < 0) throw new Exception("解压出错,错误代码:" + result);
             return outTocBuff;
         }
-
     }
 
     public class AFAHDR1
