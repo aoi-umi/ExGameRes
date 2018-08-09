@@ -26,9 +26,21 @@ namespace ExGameRes
             }
         }
 
-        public static void ShowMessage(string message)
+        public static void TryHandler(Action action)
         {
-            MessageBox.Show(message);
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "提示");
+            }
+        }
+
+        public static void ThrowException(string Message)
+        {
+            ThrowException(Message, ExceptionErrorTypeEnum.DefaultError);
         }
 
         public static void ThrowException(string Message, ExceptionErrorTypeEnum ErrorType)
@@ -36,9 +48,13 @@ namespace ExGameRes
             string error = string.Empty;
             switch (ErrorType)
             {
-                case ExceptionErrorTypeEnum.FormatError: error = string.Format("该文件不是{0}格式文件", Message); break;
+                case ExceptionErrorTypeEnum.FileTypeError:
+                    error = string.Format("该文件不是{0}格式文件", Message);
+                    break;
                 case ExceptionErrorTypeEnum.DefaultError:
-                default:error = Message; break;
+                default:
+                    error = Message;
+                    break;
             }
 
             if (!string.IsNullOrEmpty(error))
@@ -50,7 +66,7 @@ namespace ExGameRes
         public enum ExceptionErrorTypeEnum
         {
             DefaultError,
-            FormatError
+            FileTypeError
         }
 
         public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
@@ -121,7 +137,7 @@ namespace ExGameRes
         public static void MergeBMPData(Byte[] src, Byte[] dest, Byte[] mask = null)
         {
             int bmpHeaderSize = 54;
-            if (src.Length != dest.Length) ThrowException("src与dest长度不相等", ExceptionErrorTypeEnum.DefaultError);
+            if (src.Length != dest.Length) ThrowException("src与dest长度不相等");
             if (mask == null)
             {
                 for (int i = bmpHeaderSize; i < src.Length; i++)

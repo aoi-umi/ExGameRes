@@ -23,11 +23,11 @@ namespace ExGameRes.Model
             {
                 afaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (afaHeader1.Signature != Config.Signature.AFAH)
-                    Helper.ThrowException(Config.Signature.AFAH, Helper.ExceptionErrorTypeEnum.FormatError);
+                    Helper.ThrowException(Config.Signature.AFAH, Helper.ExceptionErrorTypeEnum.FileTypeError);
                 afaHeader1.Length = (uint)br.ReadInt32();
                 afaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
                 if (afaHeader1.Signature2 != Config.Signature.AlicArch)
-                    Helper.ThrowException(Config.Signature.AlicArch, Helper.ExceptionErrorTypeEnum.FormatError);
+                    Helper.ThrowException(Config.Signature.AlicArch, Helper.ExceptionErrorTypeEnum.FileTypeError);
                 Version = afaHeader1.Version = (uint)br.ReadInt32();
                 afaHeader1.Unknow = (uint)br.ReadInt32();
                 DataOffset = afaHeader1.Offset = (uint)br.ReadInt32();

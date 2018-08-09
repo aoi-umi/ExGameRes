@@ -41,7 +41,7 @@ namespace ExGameRes.Model
             {
                 QNTheader.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (QNTheader.Signature.Substring(0, 3) != Config.Signature.QNT)
-                    Helper.ThrowException(Config.Signature.QNT, Helper.ExceptionErrorTypeEnum.FormatError);
+                    Helper.ThrowException(Config.Signature.QNT, Helper.ExceptionErrorTypeEnum.FileTypeError);
                 QNTheader.Version = (uint)br.ReadInt32();
                 if (QNTheader.Version == 0)
                 {

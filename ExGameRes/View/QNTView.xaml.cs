@@ -149,12 +149,12 @@ namespace ExGameRes
                             bmpBuff = QNT.ExtractQNT(qnt);
                             if (isMergeDCF && qnt.AlphaTocLength == 0)
                             {
-                                if (lastQNTData == null) Helper.ThrowException("合并源为空", Helper.ExceptionErrorTypeEnum.DefaultError);
+                                if (lastQNTData == null) Helper.ThrowException("合并源为空");
                                 Helper.MergeBMPData(lastQNTData, bmpBuff, dcf.MaskData);
                             }
                             break;
                         default:
-                            Helper.ThrowException($"不支持的文件格式:{header}",  Helper.ExceptionErrorTypeEnum.DefaultError);
+                            Helper.ThrowException($"不支持的文件格式:{header}");
                             break;
                     }
                     Directory.CreateDirectory(qntInfo.NewPath);
@@ -194,7 +194,7 @@ namespace ExGameRes
 
         private void GetFile_Click(object sender, RoutedEventArgs e)
         {
-            try
+            Helper.TryHandler(() =>
             {
                 if (string.IsNullOrEmpty(FilePath.Trim()))
                 {
@@ -208,11 +208,7 @@ namespace ExGameRes
                     string filename = CurrFile.Name;
                     AddFileInfo(FilePath, filename);
                 }
-            }
-            catch (Exception ex)
-            {
-                Helper.ShowMessage(ex.Message);
-            }
+            });
         }
 
         private void ConvertFile_Click(object sender, RoutedEventArgs e)
@@ -281,7 +277,7 @@ namespace ExGameRes
 
         public string Filename { get; set; }
 
-        public string FilenameWithoutExt { get; set; }    
+        public string FilenameWithoutExt { get; set; }
 
         public string NewFilename
         {

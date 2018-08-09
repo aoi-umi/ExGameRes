@@ -23,7 +23,7 @@ namespace ExGameRes
             InitializeComponent();
             Title = $"{Config.Name} -By {Config.Author} -v{Config.Version}";
             FileList = new ObservableCollection<FileInfoModel>();
-            listView.ItemsSource = FileList;
+            ListView.ItemsSource = FileList;
             Binding b = new Binding() { Source = FileList, Path = new PropertyPath("Count") };
             BindingOperations.SetBinding(progressBar, ProgressBar.MaximumProperty, b);
 
@@ -37,11 +37,22 @@ namespace ExGameRes
         private string FilePath
         {
             get { return PathBox.Text; }
-            set { if (PathBox.Text != value) { PathBox.Text = value; } }
+            set
+            {
+                if (PathBox.Text != value)
+                {
+                    PathBox.Text = value;
+                }
+            }
         }
         private string DirPath
         {
-            get { return FilePath + "~"; }
+            get
+            {
+                if (string.IsNullOrWhiteSpace(DestBox.Text))
+                    return FilePath + "~";
+                return DestBox.Text;
+            }
         }
         private ObservableCollection<FileInfoModel> FileList { get; set; }
         private BackgroundWorker BgWorker = new BackgroundWorker();
@@ -58,15 +69,15 @@ namespace ExGameRes
             e.Handled = true;
         }
 
-        private void listView_KeyUp(object sender, KeyEventArgs e)
+        private void ListView_KeyUp(object sender, KeyEventArgs e)
         {
             if (!BgWorker.IsBusy && e.Key == Key.Delete)
             {
-                if (listView.SelectedItems.Count > 0)
+                if (ListView.SelectedItems.Count > 0)
                 {
-                    for (int i = listView.SelectedItems.Count - 1; i >= 0; i--)
+                    for (int i = ListView.SelectedItems.Count - 1; i >= 0; i--)
                     {
-                        FileList.RemoveAt(listView.Items.IndexOf(listView.SelectedItems[i]));
+                        FileList.RemoveAt(ListView.Items.IndexOf(ListView.SelectedItems[i]));
                     }
                 }
             }
@@ -74,24 +85,22 @@ namespace ExGameRes
 
         private void AnalyseFile_Click(object sender, RoutedEventArgs e)
         {
-            try
+            Helper.TryHandler(() =>
             {
-                if (string.IsNullOrEmpty(FilePath)) throw new Exception("文件路径不能为空");
+                if (string.IsNullOrEmpty(FilePath))
+                    throw new Exception("文件路径不能为空");
                 FileList.Clear();
                 progressBar.Value = 0;
-                AnalyseAfa();
-            }
-            catch (Exception ex)
-            {
-                Helper.ShowMessage(ex.Message);
-            }
+                Analyse();
+            });
         }
 
         private void ExFile_Click(object sender, RoutedEventArgs e)
         {
-            try
+            Helper.TryHandler(() =>
             {
-                if (string.IsNullOrEmpty(FilePath)) throw new Exception("文件路径不能为空");
+                if (string.IsNullOrEmpty(FilePath))
+                    throw new Exception("文件路径不能为空");
                 Directory.CreateDirectory(DirPath);
                 if (!BgWorker.IsBusy)
                 {
@@ -99,12 +108,7 @@ namespace ExGameRes
                     PathInfoModel pim = new PathInfoModel() { ResFilePath = FilePath, DestDirPath = DirPath };
                     BgWorker.RunWorkerAsync(pim);//开始运行DoWork_Handler里的功能
                 }
-            }
-            catch (Exception ex)
-            {
-                Helper.ShowMessage(ex.Message);
-            }
-
+            });
         }
 
         private void DoWork_Handler(object sender, DoWorkEventArgs args)
@@ -167,58 +171,89 @@ namespace ExGameRes
             CharsetBox.ItemsSource = list;
         }
 
-        private void AnalyseAfa()
+        private Encoding encoding;
+        private void Analyse()
         {
-            try
+            var fileType = "";
+            using (FileStream fs = new FileStream(FilePath, FileMode.Open))
             {
-                AliceArch aliceArch;
-                using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+                using (BinaryReader br = new BinaryReader(fs))
                 {
-                    aliceArch = new AliceArch(fs);
-                }
-                Byte[] outTocBuff = AliceArch.ExtracAliceArch(aliceArch);
-
-                Encoding encoding = null;
-                Encoding defaultEncoding = Encoding.Default;
-                var selectedItem = CharsetBox.SelectedItem as MyEncoding;
-                if (selectedItem != null)
-                {
-                    encoding = selectedItem.encoding;
-                }
-                else if (!String.IsNullOrWhiteSpace(CharsetBox.Text))
-                {
-                    encoding = Encoding.GetEncoding(CharsetBox.Text.Trim());
-                }
-                #region 获取文件信息
-                using (MemoryStream ms = new MemoryStream(outTocBuff))
-                {
-                    using (BinaryReader br = new BinaryReader(ms))
+                    var signature = Encoding.Default.GetString(br.ReadBytes(4));
+                    if (signature == Config.Signature.AFAH)
                     {
-                        for (int i = 0; i < aliceArch.EntryCount; i++)
+                        fs.Seek(4, SeekOrigin.Current);
+                        signature = Encoding.Default.GetString(br.ReadBytes(8));
+                        if (signature == Config.Signature.AlicArch)
                         {
-                            AliceArchEntryInfo aliceArchEntryInfo = new AliceArchEntryInfo(aliceArch.Version, br);
-                            FileInfoModel fileInfo = new FileInfoModel()
-                            {
-                                Filename = aliceArchEntryInfo.Filename,
-                                Offset = aliceArch.DataOffset + aliceArchEntryInfo.Offset,
-                                Length = aliceArchEntryInfo.Length
-                            };
-
-                            if (encoding != null)
-                            {
-                                fileInfo.Filename = encoding.GetString(defaultEncoding.GetBytes(fileInfo.Filename));
-                            }
-                            FileList.Add(fileInfo);
+                            fileType = Config.Signature.AFAH;
                         }
                     }
                 }
-                #endregion
             }
-            catch (Exception ex)
+
+            //编码
+            encoding = null;
+            var selectedItem = CharsetBox.SelectedItem as MyEncoding;
+            if (selectedItem != null)
             {
-                Helper.ShowMessage(ex.Message);
+                encoding = selectedItem.encoding;
+            }
+            else if (!String.IsNullOrWhiteSpace(CharsetBox.Text))
+            {
+                encoding = Encoding.GetEncoding(CharsetBox.Text.Trim());
+            }
+            switch (fileType)
+            {
+                case Config.Signature.AFAH:
+                    AnalyseAfa();
+                    break;
+                default:
+                    Helper.ThrowException("不支持的文件格式");
+                    break;
             }
         }
+
+        private void AnalyseAfa()
+        {
+            AliceArch aliceArch;
+            using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+            {
+                aliceArch = new AliceArch(fs);
+            }
+            Byte[] outTocBuff = AliceArch.ExtracAliceArch(aliceArch);
+
+            #region 获取文件信息
+            using (MemoryStream ms = new MemoryStream(outTocBuff))
+            {
+                using (BinaryReader br = new BinaryReader(ms))
+                {
+                    for (int i = 0; i < aliceArch.EntryCount; i++)
+                    {
+                        AliceArchEntryInfo aliceArchEntryInfo = new AliceArchEntryInfo(aliceArch.Version, br);
+                        FileInfoModel fileInfo = new FileInfoModel()
+                        {
+                            Filename = aliceArchEntryInfo.Filename,
+                            Offset = aliceArch.DataOffset + aliceArchEntryInfo.Offset,
+                            Length = aliceArchEntryInfo.Length
+                        };
+
+                        if (encoding != null)
+                        {
+                            fileInfo.Filename = Encoder(fileInfo.Filename);
+                        }
+                        FileList.Add(fileInfo);
+                    }
+                }
+            }
+            #endregion
+        }
+
+        private string Encoder(string str)
+        {
+            Encoding defaultEncoding = Encoding.Default;
+            return encoding.GetString(defaultEncoding.GetBytes(str));
+        }      
     }
 
     public class FileInfoModel
@@ -247,7 +282,7 @@ namespace ExGameRes
                 return encoding.EncodingName + "(" + encoding.WebName + ")";
             }
         }
-        public MyEncoding(Encoding e) : base()
+        public MyEncoding(Encoding e)
         {
             encoding = e;
         }

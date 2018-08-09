@@ -59,7 +59,7 @@ namespace ExGameRes.Model
             {
                 Signature1 = Encoding.Default.GetString(br.ReadBytes(4));
                 if (Signature1.Substring(0, 3) != Config.Signature.DCF)
-                    Helper.ThrowException(Config.Signature.DCF, Helper.ExceptionErrorTypeEnum.FormatError);
+                    Helper.ThrowException(Config.Signature.DCF, Helper.ExceptionErrorTypeEnum.FileTypeError);
                 DCFHeaderSize = br.ReadInt32();
                 DCFHeader = br.ReadBytes(DCFHeaderSize);
 

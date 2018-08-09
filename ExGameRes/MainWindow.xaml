@@ -20,6 +20,8 @@
                             <RowDefinition></RowDefinition>
                             <RowDefinition Height="5"></RowDefinition>
                             <RowDefinition></RowDefinition>
+                            <RowDefinition Height="5"></RowDefinition>
+                            <RowDefinition></RowDefinition>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="60"></ColumnDefinition>
@@ -32,15 +34,18 @@
                             <Button Click="AnalyseFile_Click" Margin="0,0,2,0">分析文件</Button>
                             <Button Click="ExFile_Click" Margin="2,0,0,0">解包</Button>
                         </UniformGrid>
-                        <TextBlock Grid.Row="2" Grid.Column="0">字符集</TextBlock>
-                        <ComboBox Name="CharsetBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="10" IsEditable="True" DisplayMemberPath="Name">
+
+                        <TextBlock Grid.Row="2" Grid.Column="0">输出</TextBlock>
+                        <TextBox Grid.Row="2" Grid.Column="1" Name="DestBox"></TextBox>
+                        <TextBlock Grid.Row="4" Grid.Column="0">字符集</TextBlock>
+                        <ComboBox Name="CharsetBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="10" IsEditable="True" DisplayMemberPath="Name">
                         </ComboBox>
                     </Grid>
                     <StackPanel DockPanel.Dock="Bottom" Margin="2">
                         <ProgressBar Height="15" Name="progressBar" Value="0"></ProgressBar>
                         <TextBlock Name="messageView"></TextBlock>
                     </StackPanel>
-                    <ListView Name="listView" Margin="2" KeyUp="listView_KeyUp">
+                    <ListView Name="ListView" Margin="2" KeyUp="ListView_KeyUp">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />
@@ -49,6 +54,11 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
+                    <DockPanel Name="InfoView" DockPanel.Dock="Right">
+                        <TextBox Name="DescView" DockPanel.Dock="Top" IsReadOnly="True" BorderThickness="0" Background="Transparent"></TextBox>
+                        <ContentControl Name="Preview" DockPanel.Dock="Bottom">
+                        </ContentControl>
+                    </DockPanel>
                 </DockPanel>
             </TabItem>
             <TabItem Header="QNT转换">
