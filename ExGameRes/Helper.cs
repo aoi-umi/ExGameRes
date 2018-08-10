@@ -79,43 +79,6 @@ namespace ExGameRes
             return ms;
         }
 
-        //public static uint[] CRC32CreateTable()
-        //{
-        //    uint[] CRC32Table = new uint[256];
-        //    uint i, j;
-        //    uint crc;
-        //    for (i = 0; i < 256; i++)
-        //    {
-        //        crc = i;
-        //        for (j = 0; j < 8; j++)
-        //        {
-        //            if ((crc & 1) != 0)
-        //            {
-        //                crc = (crc >> 1) ^ 0xEDB88320;
-        //            }
-        //            else
-        //            {
-        //                crc = crc >> 1;
-        //            }
-        //        }
-        //        CRC32Table[i] = crc;
-        //    }
-        //    return CRC32Table;
-        //}
-
-        //public static uint CRC32(uint[] CRCTable, Byte[] buf, int len = 0)
-        //{
-        //    if (len == 0 || len > buf.Length) len = buf.Length;
-        //    uint ret = 0xFFFFFFFF;
-        //    int i;
-        //    for (i = 0; i < len; i++)
-        //    {
-        //        ret = CRCTable[((ret & 0xFF) ^ buf[i])] ^ (ret >> 8);
-        //    }
-        //    ret = ~ret;
-        //    return ret;
-        //}
-
         public static uint CRC32(Byte[] buf)
         {
             var crc = new CRC32();
@@ -156,7 +119,7 @@ namespace ExGameRes
                 int width = BitConverter.ToInt32(Helper.GetBytes(src, 18, 4), 0);
                 int height = BitConverter.ToInt32(Helper.GetBytes(src, 22, 4), 0);
                 if (maskSize != mask.Length - 4 || (mask.Length - 4) * 3 * 0x100 != (src.Length - bmpHeaderSize))
-                    throw new MyException("dcf数据有误", MyException.ErrorTypeEnum.DefaultError);
+                    throw new MyException("mask数据有误", MyException.ErrorTypeEnum.DefaultError);
 
                 int maskBitSize = 0x10;
                 int maskWidth = width / maskBitSize;

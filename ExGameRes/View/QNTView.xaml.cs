@@ -64,34 +64,25 @@ namespace ExGameRes
 
         private void listView_KeyUp(object sender, KeyEventArgs e)
         {
-            if (!BgWorker.IsBusy && e.Key == Key.Delete)
+            if (BgWorker.IsBusy || e.Key != Key.Delete)
+                return;
+            if (listView.SelectedItems.Count > 0)
             {
-                if (listView.SelectedItems.Count > 0)
+                progressBar.Value = 0;
+                for (int i = listView.SelectedItems.Count - 1; i >= 0; i--)
                 {
-                    progressBar.Value = 0;
-                    for (int i = listView.SelectedItems.Count - 1; i >= 0; i--)
-                    {
-                        FileList.RemoveAt(listView.Items.IndexOf(listView.SelectedItems[i]));
-                    }
+                    FileList.RemoveAt(listView.Items.IndexOf(listView.SelectedItems[i]));
                 }
             }
+
         }
 
         private void listView_Drop(object sender, DragEventArgs e)
         {
-            if (isDragingItem)
-            {
-                isDragingItem = false;
-                int index = GetCurrentIndex(listView, e.GetPosition);
-                if (listView.SelectedItems.Count > 0 && index >= 0 && index != FileList.IndexOf(listView.SelectedItems[0] as QNTFileInfoModel))
-                {
-                    foreach (QNTFileInfoModel item in listView.SelectedItems)
-                    {
-                        FileList.Move(FileList.IndexOf(item), index);
-                    }
-                }
-            }
-            else
+            if (BgWorker.IsBusy)
+                return;
+            var format = e.Data.GetFormats();
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 progressBar.Value = 0;
                 Array list = e.Data.GetData(DataFormats.FileDrop) as Array;
@@ -107,16 +98,27 @@ namespace ExGameRes
                     }
                 }
             }
+            else
+            {
+                int index = GetCurrentIndex(listView, e.GetPosition);
+                if (listView.SelectedItems.Count > 0 && index >= 0 && index != FileList.IndexOf(listView.SelectedItems[0] as QNTFileInfoModel))
+                {
+                    foreach (QNTFileInfoModel item in listView.SelectedItems)
+                    {
+                        FileList.Move(FileList.IndexOf(item), index);
+                    }
+                    listView.SelectedItems.Clear();
+                }
+            }
         }
 
-        private bool isDragingItem = false;
         private void listView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!isDragingItem && e.LeftButton == MouseButtonState.Pressed)
-            {
-                isDragingItem = true;
+            if (BgWorker.IsBusy || e.LeftButton != MouseButtonState.Pressed)
+                return;
+            int index = GetCurrentIndex(listView, e.GetPosition);
+            if (index >= 0 && listView.SelectedItems.Count > 0)
                 DragDrop.DoDragDrop(listView, listView.SelectedItems, DragDropEffects.Move);
-            }
         }
 
         #region BackgroundWorker
@@ -257,6 +259,8 @@ namespace ExGameRes
 
         private bool IsMouseOverTarget(Visual target, GetPositionDelegate getPosition)
         {
+            if (target == null)
+                return false;
             Rect bounds = VisualTreeHelper.GetDescendantBounds(target);
             Point mousePos = getPosition((IInputElement)target);
             return bounds.Contains(mousePos);

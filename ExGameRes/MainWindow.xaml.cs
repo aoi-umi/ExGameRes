@@ -142,7 +142,7 @@ namespace ExGameRes
         {
             //这里更新ui   
             progressBar.Value = args.ProgressPercentage;
-            messageView.Text = progressBar.Value.ToString() + "/" + progressBar.Maximum.ToString();
+            messageView.Text = $"{progressBar.Value}/{progressBar.Maximum}";
             if (progressBar.Value == progressBar.Maximum)
             {
                 OperationBox.IsEnabled = true;
@@ -176,20 +176,19 @@ namespace ExGameRes
         {
             var fileType = "";
             using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+            using (BinaryReader br = new BinaryReader(fs))
             {
-                using (BinaryReader br = new BinaryReader(fs))
+                var signature = Encoding.Default.GetString(br.ReadBytes(4));
+                if (signature == Config.Signature.AFAH)
                 {
-                    var signature = Encoding.Default.GetString(br.ReadBytes(4));
-                    if (signature == Config.Signature.AFAH)
+                    fs.Seek(4, SeekOrigin.Current);
+                    signature = Encoding.Default.GetString(br.ReadBytes(8));
+                    if (signature == Config.Signature.AlicArch)
                     {
-                        fs.Seek(4, SeekOrigin.Current);
-                        signature = Encoding.Default.GetString(br.ReadBytes(8));
-                        if (signature == Config.Signature.AlicArch)
-                        {
-                            fileType = Config.Signature.AFAH;
-                        }
+                        fileType = Config.Signature.AFAH;
                     }
                 }
+
             }
 
             //编码
@@ -203,17 +202,24 @@ namespace ExGameRes
             {
                 encoding = Encoding.GetEncoding(CharsetBox.Text.Trim());
             }
+            var desc = "";
             switch (fileType)
             {
                 case Config.Signature.AFAH:
-                    AnalyseAfa();
+                    var x = AnalyseAfa();
+                    desc = string.Join("\r\n", new string[] {
+                        $"Company: {Config.Signature.AliceSoft}",
+                        $"FileType: {Config.Signature.AFA}",
+                        $"Version: {x.Version}",
+                    });
                     break;
                 default:
                     throw new MyException("不支持的文件格式");
             }
+            DescView.Text = desc;
         }
 
-        private void AnalyseAfa()
+        private AliceArch AnalyseAfa()
         {
             AliceArch aliceArch;
             using (FileStream fs = new FileStream(FilePath, FileMode.Open))
@@ -244,6 +250,7 @@ namespace ExGameRes
                 }
 
             }
+            return aliceArch;
             #endregion
         }
 

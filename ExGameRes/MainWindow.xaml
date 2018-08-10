@@ -45,20 +45,30 @@
                         <ProgressBar Height="15" Name="progressBar" Value="0"></ProgressBar>
                         <TextBlock Name="messageView"></TextBlock>
                     </StackPanel>
-                    <ListView Name="ListView" Margin="2" KeyUp="ListView_KeyUp">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />
-                                <GridViewColumn DisplayMemberBinding="{Binding Path=Offset}" Header="Offset" Width="80" />
-                                <GridViewColumn DisplayMemberBinding="{Binding Path=Length}" Header="Length" Width="80" />
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                    <DockPanel Name="InfoView" DockPanel.Dock="Right">
-                        <TextBox Name="DescView" DockPanel.Dock="Top" IsReadOnly="True" BorderThickness="0" Background="Transparent"></TextBox>
-                        <ContentControl Name="Preview" DockPanel.Dock="Bottom">
-                        </ContentControl>
-                    </DockPanel>
+                    <Border Margin="2" BorderThickness=".6" BorderBrush="Gray">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <ListView Name="ListView" KeyUp="ListView_KeyUp" BorderThickness="0">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Offset}" Header="Offset" Width="80" />
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Length}" Header="Length" Width="80" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"></GridSplitter>
+                            <DockPanel Name="InfoView" Grid.Column="2">
+                                <TextBox Name="DescView" DockPanel.Dock="Top" IsReadOnly="True" BorderThickness="0" Background="Transparent"></TextBox>
+                                <ContentControl Name="Preview" DockPanel.Dock="Bottom">
+                                </ContentControl>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
                 </DockPanel>
             </TabItem>
             <TabItem Header="QNT转换">
