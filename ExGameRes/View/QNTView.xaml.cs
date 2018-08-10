@@ -149,13 +149,13 @@ namespace ExGameRes
                             bmpBuff = QNT.ExtractQNT(qnt);
                             if (isMergeDCF && qnt.AlphaTocLength == 0)
                             {
-                                if (lastQNTData == null) Helper.ThrowException("合并源为空");
+                                if (lastQNTData == null)
+                                    throw new MyException("合并源为空");
                                 Helper.MergeBMPData(lastQNTData, bmpBuff, dcf.MaskData);
                             }
                             break;
                         default:
-                            Helper.ThrowException($"不支持的文件格式:{header}");
-                            break;
+                            throw new MyException($"不支持的文件格式:{header}");
                     }
                     Directory.CreateDirectory(qntInfo.NewPath);
                     if (qnt.AlphaTocLength > 0)
@@ -167,7 +167,6 @@ namespace ExGameRes
                         qntInfo.NewFilename = Path.Combine(qntInfo.NewPath, qntInfo.FilenameWithoutExt + ".bmp");
                     }
                     Helper.WriteBytesToFile(qntInfo.NewFilename, bmpBuff);
-                    //qnt = null;
                     qntInfo.Desc = "转换完毕";
                 }
                 catch (Exception ex)
@@ -183,7 +182,7 @@ namespace ExGameRes
         {
             //这里更新ui   
             progressBar.Value = args.ProgressPercentage;
-            messageView.Text = progressBar.Value.ToString() + "/" + progressBar.Maximum.ToString();
+            messageView.Text = $"{progressBar.Value}/{progressBar.Maximum}";
             if (progressBar.Value == progressBar.Maximum)
             {
                 OperationBox.IsEnabled = true;

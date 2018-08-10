@@ -209,8 +209,7 @@ namespace ExGameRes
                     AnalyseAfa();
                     break;
                 default:
-                    Helper.ThrowException("不支持的文件格式");
-                    break;
+                    throw new MyException("不支持的文件格式");
             }
         }
 
@@ -225,26 +224,25 @@ namespace ExGameRes
 
             #region 获取文件信息
             using (MemoryStream ms = new MemoryStream(outTocBuff))
+            using (BinaryReader br = new BinaryReader(ms))
             {
-                using (BinaryReader br = new BinaryReader(ms))
+                for (int i = 0; i < aliceArch.EntryCount; i++)
                 {
-                    for (int i = 0; i < aliceArch.EntryCount; i++)
+                    AliceArchEntryInfo aliceArchEntryInfo = new AliceArchEntryInfo(aliceArch.Version, br);
+                    FileInfoModel fileInfo = new FileInfoModel()
                     {
-                        AliceArchEntryInfo aliceArchEntryInfo = new AliceArchEntryInfo(aliceArch.Version, br);
-                        FileInfoModel fileInfo = new FileInfoModel()
-                        {
-                            Filename = aliceArchEntryInfo.Filename,
-                            Offset = aliceArch.DataOffset + aliceArchEntryInfo.Offset,
-                            Length = aliceArchEntryInfo.Length
-                        };
+                        Filename = aliceArchEntryInfo.Filename,
+                        Offset = aliceArch.DataOffset + aliceArchEntryInfo.Offset,
+                        Length = aliceArchEntryInfo.Length
+                    };
 
-                        if (encoding != null)
-                        {
-                            fileInfo.Filename = Encoder(fileInfo.Filename);
-                        }
-                        FileList.Add(fileInfo);
+                    if (encoding != null)
+                    {
+                        fileInfo.Filename = Encoder(fileInfo.Filename);
                     }
+                    FileList.Add(fileInfo);
                 }
+
             }
             #endregion
         }
@@ -253,7 +251,7 @@ namespace ExGameRes
         {
             Encoding defaultEncoding = Encoding.Default;
             return encoding.GetString(defaultEncoding.GetBytes(str));
-        }      
+        }
     }
 
     public class FileInfoModel

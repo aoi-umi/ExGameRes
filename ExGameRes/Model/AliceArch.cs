@@ -23,11 +23,11 @@ namespace ExGameRes.Model
             {
                 afaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (afaHeader1.Signature != Config.Signature.AFAH)
-                    Helper.ThrowException(Config.Signature.AFAH, Helper.ExceptionErrorTypeEnum.FileTypeError);
+                    throw new MyException(Config.Signature.AFAH, MyException.ErrorTypeEnum.FileTypeError);
                 afaHeader1.Length = (uint)br.ReadInt32();
                 afaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
                 if (afaHeader1.Signature2 != Config.Signature.AlicArch)
-                    Helper.ThrowException(Config.Signature.AlicArch, Helper.ExceptionErrorTypeEnum.FileTypeError);
+                    throw new MyException(Config.Signature.AlicArch, MyException.ErrorTypeEnum.FileTypeError);
                 Version = afaHeader1.Version = (uint)br.ReadInt32();
                 afaHeader1.Unknow = (uint)br.ReadInt32();
                 DataOffset = afaHeader1.Offset = (uint)br.ReadInt32();
@@ -43,11 +43,8 @@ namespace ExGameRes.Model
 
         public static Byte[] ExtracAliceArch(AliceArch aliceArch)
         {
-            Byte[] outTocBuff = new Byte[aliceArch.OriginalTocLength];
             uint outTocBuffLength = aliceArch.OriginalTocLength;
-            int result = Helper.uncompress(outTocBuff, ref outTocBuffLength, aliceArch.InfoData, aliceArch.TocLength);
-            if (result < 0) throw new Exception("解压出错,错误代码:" + result);
-            return outTocBuff;
+            return Helper.Decompress(aliceArch.InfoData, ref outTocBuffLength);
         }
     }
 

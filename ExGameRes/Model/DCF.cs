@@ -59,7 +59,7 @@ namespace ExGameRes.Model
             {
                 Signature1 = Encoding.Default.GetString(br.ReadBytes(4));
                 if (Signature1.Substring(0, 3) != Config.Signature.DCF)
-                    Helper.ThrowException(Config.Signature.DCF, Helper.ExceptionErrorTypeEnum.FileTypeError);
+                    throw new MyException(Config.Signature.DCF, MyException.ErrorTypeEnum.FileTypeError);
                 DCFHeaderSize = br.ReadInt32();
                 DCFHeader = br.ReadBytes(DCFHeaderSize);
 
@@ -68,8 +68,7 @@ namespace ExGameRes.Model
                 DFDLDataOrgSize = br.ReadInt32();
                 DFDLData = br.ReadBytes(DFDLSize - 4);
                 uint outSize = (uint)DFDLDataOrgSize;
-                MaskData = new Byte[DFDLDataOrgSize];
-                Helper.uncompress(MaskData, ref outSize, DFDLData, (uint)DFDLData.Length);
+                MaskData = Helper.Decompress(DFDLData, ref outSize);
 
                 Signature3 = Encoding.Default.GetString(br.ReadBytes(4));
                 DCGDSize = br.ReadInt32();

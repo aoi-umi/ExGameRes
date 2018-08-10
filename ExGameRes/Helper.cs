@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ionic.Zlib;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,10 +14,34 @@ namespace ExGameRes
     public static class Helper
     {
         [DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int uncompress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+        private static extern int uncompress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
 
         [DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int compress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+        private static extern int compress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+
+        public static Byte[] Compress(Byte[] source, ref uint destLen)
+        {
+            //Byte[] dest = new Byte[destLen];
+            //int result = compress(dest, ref destLen, source, (uint)source.Length);
+            //if (result < 0)
+            //    throw new Exception("压缩出错,错误代码:" + result);
+            //return dest;
+            var dest = ZlibStream.CompressBuffer(source);
+            destLen = (uint)dest.Length;
+            return dest;
+        }
+
+        public static Byte[] Decompress(Byte[] source, ref uint destLen)
+        {
+            //var dest = new Byte[destLen];
+            //int result = uncompress(dest, ref destLen, source, (uint)source.Length);
+            //if (result < 0)
+            //    throw new Exception("解压出错,错误代码:" + result);
+            //return dest;
+            var dest = ZlibStream.UncompressBuffer(source);
+            destLen = (uint)dest.Length;
+            return dest;
+        }
 
         public static async void WriteBytesToFile(string path, Byte[] bytes)
         {
@@ -36,37 +61,6 @@ namespace ExGameRes
             {
                 MessageBox.Show(ex.Message, "提示");
             }
-        }
-
-        public static void ThrowException(string Message)
-        {
-            ThrowException(Message, ExceptionErrorTypeEnum.DefaultError);
-        }
-
-        public static void ThrowException(string Message, ExceptionErrorTypeEnum ErrorType)
-        {
-            string error = string.Empty;
-            switch (ErrorType)
-            {
-                case ExceptionErrorTypeEnum.FileTypeError:
-                    error = string.Format("该文件不是{0}格式文件", Message);
-                    break;
-                case ExceptionErrorTypeEnum.DefaultError:
-                default:
-                    error = Message;
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                throw new Exception(error);
-            }
-        }
-
-        public enum ExceptionErrorTypeEnum
-        {
-            DefaultError,
-            FileTypeError
         }
 
         public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
@@ -137,7 +131,8 @@ namespace ExGameRes
         public static void MergeBMPData(Byte[] src, Byte[] dest, Byte[] mask = null)
         {
             int bmpHeaderSize = 54;
-            if (src.Length != dest.Length) ThrowException("src与dest长度不相等");
+            if (src.Length != dest.Length)
+                throw new MyException("src与dest长度不相等");
             if (mask == null)
             {
                 for (int i = bmpHeaderSize; i < src.Length; i++)
@@ -151,7 +146,7 @@ namespace ExGameRes
                 int width = BitConverter.ToInt32(Helper.GetBytes(src, 18, 4), 0);
                 int height = BitConverter.ToInt32(Helper.GetBytes(src, 22, 4), 0);
                 if (maskSize != mask.Length - 4 || (mask.Length - 4) * 3 * 0x100 != (src.Length - bmpHeaderSize))
-                    Helper.ThrowException("dcf数据有误", Helper.ExceptionErrorTypeEnum.DefaultError);
+                    throw new MyException("dcf数据有误", MyException.ErrorTypeEnum.DefaultError);
 
                 int maskBitSize = 0x10;
                 int maskWidth = width / maskBitSize;
@@ -183,6 +178,34 @@ namespace ExGameRes
             Byte[] b = new Byte[length];
             Array.Copy(src, startPos, b, 0, length);
             return b;
+        }
+    }
+
+    public class MyException : Exception
+    {
+        public enum ErrorTypeEnum
+        {
+            DefaultError,
+            FileTypeError
+        }
+        public new string Message { get; private set; }
+        public MyException(string message) : base(message)
+        {
+        }
+        public MyException(string message, ErrorTypeEnum errorType)
+        {
+            string error = string.Empty;
+            switch (errorType)
+            {
+                case ErrorTypeEnum.FileTypeError:
+                    error = string.Format("该文件不是{0}格式文件", message);
+                    break;
+                case ErrorTypeEnum.DefaultError:
+                default:
+                    error = message;
+                    break;
+            }
+            Message = error;
         }
     }
 }

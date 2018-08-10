@@ -23,7 +23,7 @@ namespace ExGameRes.Model
 
         public QNT(Stream stream)
         {
-            InitQNT(stream);            
+            InitQNT(stream);
         }
 
         public QNT(string filePath)
@@ -41,13 +41,14 @@ namespace ExGameRes.Model
             {
                 QNTheader.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (QNTheader.Signature.Substring(0, 3) != Config.Signature.QNT)
-                    Helper.ThrowException(Config.Signature.QNT, Helper.ExceptionErrorTypeEnum.FileTypeError);
+                    throw new MyException(Config.Signature.QNT, MyException.ErrorTypeEnum.FileTypeError);
                 QNTheader.Version = (uint)br.ReadInt32();
                 if (QNTheader.Version == 0)
                 {
                     Offset = QNTheader.Offset = 48;
                 }
-                else {
+                else
+                {
                     Offset = QNTheader.Offset = (uint)br.ReadInt32();
                 }
                 QNTheader.X0 = (uint)br.ReadInt32();
@@ -85,10 +86,12 @@ namespace ExGameRes.Model
                 0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,
                 0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52,//[0x08-0x0b]IHDR lenght [0x0c-0x1c]IHDR
                 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//[0x10-0x13] width [0x14-0x17]height
-                0x08,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00};//[0x1d-0x20] IHRD crc
+                0x08,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00//[0x1d-0x20] IHRD crc
+            };
             Byte[] IEND = new Byte[] {
                 0x00,0x00,0x00,0x00,0x49,0x45,0x4e,0x44,
-                0xae,0x42,0x60,0x82};
+                0xae,0x42,0x60,0x82
+            };
 
             uint bmpHeaderSize = 14 + 40;
             uint pngHeaderSize = 8 + 25;
@@ -104,7 +107,7 @@ namespace ExGameRes.Model
                 lcount = w * 4;
                 imageSize = lcount * h;
                 ResetBytes(BMPHeader, 28, new Byte[] { 32 });
-                Alpha = ExtractAlpha(QNTFile);            //IPAddress.NetworkToHostOrder(); 
+                Alpha = ExtractAlpha(QNTFile);
             }
 
             Byte[] imgData = null;
@@ -120,7 +123,7 @@ namespace ExGameRes.Model
                 ResetBytes(BMPHeader, 34, BitConverter.GetBytes(imageSize));
                 imgData = new Byte[fileSize];
                 BMPHeader.CopyTo(imgData, 0);
-                Pixel.CopyTo(imgData, bmpHeaderSize);                
+                Pixel.CopyTo(imgData, bmpHeaderSize);
             }
             else
             {
@@ -150,14 +153,13 @@ namespace ExGameRes.Model
                         int currPixelPos = currAlphaPos * 3;
                         Byte b = Pixel[currPixelPos + 2];
                         Pixel[currPixelPos + 2] = Pixel[currPixelPos];
-                        Pixel[currPixelPos] = b;                        
+                        Pixel[currPixelPos] = b;
                         Array.Copy(Pixel, currPixelPos, PixelWithAlpha, (i * w + j) * 4 + y, 3);
                         Array.Copy(Alpha, currAlphaPos, PixelWithAlpha, (i * w + j) * 4 + 3 + y, 1);
                     }
-                }                
-                Byte[] compressBytes = new Byte[PixelWithAlpha.Length];
+                }
                 uint compressLength = (uint)PixelWithAlpha.Length;
-                Helper.compress(compressBytes,ref compressLength, PixelWithAlpha, (uint)PixelWithAlpha.Length);
+                Byte[] compressBytes = Helper.Compress(PixelWithAlpha, ref compressLength);
                 Byte[] IDAT = new Byte[compressLength + 12];
                 Byte[] compressLengthBytes = BitConverter.GetBytes(compressLength);
                 crc32 = Helper.CRC32(CRC32Table, compressLengthBytes, (int)compressLength);
@@ -183,10 +185,8 @@ namespace ExGameRes.Model
         private static Byte[] ExtractPixel(QNT QNTFile, bool FixWidth)
         {
             uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
-            Byte[] outTocBuff = new Byte[size];
             uint outTocBuffLength = size;
-            int result = Helper.uncompress(outTocBuff, ref outTocBuffLength, QNTFile.PixelData, QNTFile.PixelTocLength);
-            if (result < 0) throw new Exception("解压出错,错误代码:" + result);
+            Byte[] outTocBuff = Helper.Decompress(QNTFile.PixelData, ref outTocBuffLength);
 
             Byte[] pic = new Byte[outTocBuffLength];
             int i, j;
@@ -262,7 +262,7 @@ namespace ExGameRes.Model
                     }
                 }
             }
-            
+
             uint lcount = FixWidth ? (uint)((QNTFile.Width * 3 + 3) & (~3)) : QNTFile.Width * 3;
             byte[] truePic = new byte[lcount * QNTFile.Height];
             int offset = 0;
@@ -285,10 +285,8 @@ namespace ExGameRes.Model
         private static Byte[] ExtractAlpha(QNT QNTFile)
         {
             uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
-            Byte[] outTocBuff = new Byte[size];
             uint outTocBuffLength = size;
-            int result = Helper.uncompress(outTocBuff, ref outTocBuffLength, QNTFile.AlphaData, QNTFile.AlphaTocLength);
-            if (result < 0) throw new Exception("解压出错,错误代码:" + result);
+            Byte[] outTocBuff = Helper.Decompress(QNTFile.AlphaData, ref outTocBuffLength);
 
             Byte[] alpha = new Byte[outTocBuffLength];
             uint i, x, y, w, h;
@@ -325,8 +323,10 @@ namespace ExGameRes.Model
                 }
             }
             Byte[] trueAlpha = new Byte[outTocBuffLength];
-            for (y = 0; y < h; y++) {
-                for (x = 0; x < w; x++) {
+            for (y = 0; y < h; y++)
+            {
+                for (x = 0; x < w; x++)
+                {
                     trueAlpha[y * w + x] = alpha[(h - y - 1) * w + x];
                 }
             }
