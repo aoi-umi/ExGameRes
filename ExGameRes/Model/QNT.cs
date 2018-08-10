@@ -42,23 +42,23 @@ namespace ExGameRes.Model
                 QNTheader.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (QNTheader.Signature.Substring(0, 3) != Config.Signature.QNT)
                     throw new MyException(Config.Signature.QNT, MyException.ErrorTypeEnum.FileTypeError);
-                QNTheader.Version = (uint)br.ReadInt32();
+                QNTheader.Version = br.ReadUInt32();
                 if (QNTheader.Version == 0)
                 {
                     Offset = QNTheader.Offset = 48;
                 }
                 else
                 {
-                    Offset = QNTheader.Offset = (uint)br.ReadInt32();
+                    Offset = QNTheader.Offset = br.ReadUInt32();
                 }
-                QNTheader.X0 = (uint)br.ReadInt32();
-                QNTheader.Y0 = (uint)br.ReadInt32();
-                Width = QNTheader.Width = (uint)br.ReadInt32();
-                Height = QNTheader.Height = (uint)br.ReadInt32();
-                BitCount = QNTheader.BitCount = (uint)br.ReadInt32();
-                QNTheader.RSV = (uint)br.ReadInt32();
-                PixelTocLength = QNTheader.PixelTocLength = (uint)br.ReadInt32();
-                AlphaTocLength = QNTheader.AlphaTocLength = (uint)br.ReadInt32();
+                QNTheader.X0 = br.ReadUInt32();
+                QNTheader.Y0 = br.ReadUInt32();
+                Width = QNTheader.Width = br.ReadUInt32();
+                Height = QNTheader.Height = br.ReadUInt32();
+                BitCount = QNTheader.BitCount = br.ReadUInt32();
+                QNTheader.RSV = br.ReadUInt32();
+                PixelTocLength = QNTheader.PixelTocLength = br.ReadUInt32();
+                AlphaTocLength = QNTheader.AlphaTocLength = br.ReadUInt32();
                 if (QNTheader.Version == 0)
                 {
                     QNTheader.Unknow4 = br.ReadBytes(8);
@@ -85,8 +85,8 @@ namespace ExGameRes.Model
             Byte[] PNGHeader = new Byte[] {
                 0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,
                 0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52,//[0x08-0x0b]IHDR lenght [0x0c-0x1c]IHDR
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//[0x10-0x13] width [0x14-0x17]height
-                0x08,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00//[0x1d-0x20] IHRD crc
+                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//[0x10-0x13]width [0x14-0x17]height
+                0x08,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00//[0x1d-0x20]IHRD crc
             };
             Byte[] IEND = new Byte[] {
                 0x00,0x00,0x00,0x00,0x49,0x45,0x4e,0x44,
@@ -127,7 +127,6 @@ namespace ExGameRes.Model
             }
             else
             {
-                uint[] CRC32Table = Helper.CRC32CreateTable();
                 uint crc32 = 0;
                 Byte[] CRC32Bytes = null;
                 fileSize = pngHeaderSize + (uint)IEND.Length;
@@ -136,7 +135,7 @@ namespace ExGameRes.Model
                 Array.Reverse(HeightBytes);
                 ResetBytes(PNGHeader, 0x10, WidthBytes);
                 ResetBytes(PNGHeader, 0x14, HeightBytes);
-                crc32 = Helper.CRC32(CRC32Table, Helper.GetBytes(PNGHeader, 0x0c, 17));
+                crc32 = Helper.CRC32(Helper.GetBytes(PNGHeader, 0x0c, 17));
                 CRC32Bytes = BitConverter.GetBytes(crc32);
                 Array.Reverse(CRC32Bytes);
                 ResetBytes(PNGHeader, 0x1d, CRC32Bytes);
@@ -162,7 +161,7 @@ namespace ExGameRes.Model
                 Byte[] compressBytes = Helper.Compress(PixelWithAlpha, ref compressLength);
                 Byte[] IDAT = new Byte[compressLength + 12];
                 Byte[] compressLengthBytes = BitConverter.GetBytes(compressLength);
-                crc32 = Helper.CRC32(CRC32Table, compressLengthBytes, (int)compressLength);
+                crc32 = Helper.CRC32(compressLengthBytes);
                 CRC32Bytes = BitConverter.GetBytes(crc32);
                 Array.Reverse(CRC32Bytes);
                 Array.Reverse(compressLengthBytes);

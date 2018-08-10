@@ -1,4 +1,5 @@
 ﻿using Ionic.Zlib;
+using Ionic.Crc;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -78,41 +79,50 @@ namespace ExGameRes
             return ms;
         }
 
-        public static uint[] CRC32CreateTable()
-        {
-            uint[] CRC32Table = new uint[256];
-            uint i, j;
-            uint crc;
-            for (i = 0; i < 256; i++)
-            {
-                crc = i;
-                for (j = 0; j < 8; j++)
-                {
-                    if ((crc & 1) != 0)
-                    {
-                        crc = (crc >> 1) ^ 0xEDB88320;
-                    }
-                    else
-                    {
-                        crc = crc >> 1;
-                    }
-                }
-                CRC32Table[i] = crc;
-            }
-            return CRC32Table;
-        }
+        //public static uint[] CRC32CreateTable()
+        //{
+        //    uint[] CRC32Table = new uint[256];
+        //    uint i, j;
+        //    uint crc;
+        //    for (i = 0; i < 256; i++)
+        //    {
+        //        crc = i;
+        //        for (j = 0; j < 8; j++)
+        //        {
+        //            if ((crc & 1) != 0)
+        //            {
+        //                crc = (crc >> 1) ^ 0xEDB88320;
+        //            }
+        //            else
+        //            {
+        //                crc = crc >> 1;
+        //            }
+        //        }
+        //        CRC32Table[i] = crc;
+        //    }
+        //    return CRC32Table;
+        //}
 
-        public static uint CRC32(uint[] CRCTable, Byte[] buf, int len = 0)
+        //public static uint CRC32(uint[] CRCTable, Byte[] buf, int len = 0)
+        //{
+        //    if (len == 0 || len > buf.Length) len = buf.Length;
+        //    uint ret = 0xFFFFFFFF;
+        //    int i;
+        //    for (i = 0; i < len; i++)
+        //    {
+        //        ret = CRCTable[((ret & 0xFF) ^ buf[i])] ^ (ret >> 8);
+        //    }
+        //    ret = ~ret;
+        //    return ret;
+        //}
+
+        public static uint CRC32(Byte[] buf)
         {
-            if (len == 0 || len > buf.Length) len = buf.Length;
-            uint ret = 0xFFFFFFFF;
-            int i;
-            for (i = 0; i < len; i++)
+            var crc = new CRC32();
+            using (var stream = ByteArrayToStream(buf))
             {
-                ret = CRCTable[((ret & 0xFF) ^ buf[i])] ^ (ret >> 8);
+                return (uint)crc.GetCrc32(stream);
             }
-            ret = ~ret;
-            return ret;
         }
 
         public static string GetHeader(string filePath)
@@ -155,17 +165,17 @@ namespace ExGameRes
                 {
                     for (int j = 0; j < maskWidth; j++)
                     {
-                        if (mask[4 + i * maskWidth + j] == 1)
+                        if (mask[4 + i * maskWidth + j] != 1)
+                            continue;
+
+                        for (int y = 0; y < maskBitSize; y++)
                         {
-                            for (int y = 0; y < maskBitSize; y++)
+                            for (int x = 0; x < maskBitSize; x++)
                             {
-                                for (int x = 0; x < maskBitSize; x++)
-                                {
-                                    int tagPos = bmpHeaderSize + ((maskHeight - i - 1) * width * maskBitSize + j * maskBitSize + y * width + x) * 3;
-                                    dest[tagPos] = src[tagPos];
-                                    dest[tagPos + 1] = src[tagPos + 1];
-                                    dest[tagPos + 2] = src[tagPos + 2];
-                                }
+                                int tagPos = bmpHeaderSize + ((maskHeight - i - 1) * width * maskBitSize + j * maskBitSize + y * width + x) * 3;
+                                dest[tagPos] = src[tagPos];
+                                dest[tagPos + 1] = src[tagPos + 1];
+                                dest[tagPos + 2] = src[tagPos + 2];
                             }
                         }
                     }

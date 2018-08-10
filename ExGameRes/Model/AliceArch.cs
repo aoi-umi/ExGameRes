@@ -24,18 +24,18 @@ namespace ExGameRes.Model
                 afaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
                 if (afaHeader1.Signature != Config.Signature.AFAH)
                     throw new MyException(Config.Signature.AFAH, MyException.ErrorTypeEnum.FileTypeError);
-                afaHeader1.Length = (uint)br.ReadInt32();
+                afaHeader1.Length = br.ReadUInt32();
                 afaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
                 if (afaHeader1.Signature2 != Config.Signature.AlicArch)
                     throw new MyException(Config.Signature.AlicArch, MyException.ErrorTypeEnum.FileTypeError);
-                Version = afaHeader1.Version = (uint)br.ReadInt32();
-                afaHeader1.Unknow = (uint)br.ReadInt32();
-                DataOffset = afaHeader1.Offset = (uint)br.ReadInt32();
+                Version = afaHeader1.Version = br.ReadUInt32();
+                afaHeader1.Unknow = br.ReadUInt32();
+                DataOffset = afaHeader1.Offset = br.ReadUInt32();
 
                 afaHeader2.Signature = Encoding.Default.GetString(br.ReadBytes(4));
-                TocLength = afaHeader2.TocLength = (uint)br.ReadInt32();
-                OriginalTocLength = afaHeader2.OriginalTocLength = (uint)br.ReadInt32();
-                EntryCount = afaHeader2.EntryCount = (uint)br.ReadInt32();
+                TocLength = afaHeader2.TocLength = br.ReadUInt32();
+                OriginalTocLength = afaHeader2.OriginalTocLength = br.ReadUInt32();
+                EntryCount = afaHeader2.EntryCount = br.ReadUInt32();
 
                 InfoData = br.ReadBytes((int)afaHeader2.TocLength);
             }
@@ -88,17 +88,17 @@ namespace ExGameRes.Model
         {
             afaEntry1 = new AFAENTRY1();
             afaEntry2 = new AFAENTRY2();
-            afaEntry1.FilenameLength = (uint)br.ReadInt32();
-            afaEntry1.FilenameLengthPadded = (uint)br.ReadInt32();
+            afaEntry1.FilenameLength = br.ReadUInt32();
+            afaEntry1.FilenameLengthPadded = br.ReadUInt32();
             Filename = Encoding.Default.GetString(br.ReadBytes((int)afaEntry1.FilenameLength));
             if (afaEntry1.FilenameLengthPadded > afaEntry1.FilenameLength)
                 br.ReadBytes((int)(afaEntry1.FilenameLengthPadded - afaEntry1.FilenameLength));
 
-            afaEntry2.Unknow1 = (uint)br.ReadInt32();
-            afaEntry2.Unknow2 = (uint)br.ReadInt32();
-            if (Version == 1) afaEntry2.Unknow3 = (uint)br.ReadInt32();
-            Offset = afaEntry2.Offset = (uint)br.ReadInt32();
-            Length = afaEntry2.Length = (uint)br.ReadInt32();
+            afaEntry2.Unknow1 = br.ReadUInt32();
+            afaEntry2.Unknow2 = br.ReadUInt32();
+            if (Version == 1) afaEntry2.Unknow3 = br.ReadUInt32();
+            Offset = afaEntry2.Offset = br.ReadUInt32();
+            Length = afaEntry2.Length = br.ReadUInt32();
         }
     }
 
