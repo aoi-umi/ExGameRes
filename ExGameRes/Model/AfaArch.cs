@@ -1,21 +1,35 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace ExGameRes.Model
 {
-    public class AliceArch
+    public class AfaArch
     {
-        public uint Version { get; }
-        public uint DataOffset { get; }
-        public uint EntryCount { get; }
-        public uint TocLength { get; }
-        public uint OriginalTocLength { get; }
-        public Byte[] InfoData { get; set; }
+        public uint Version { get; private set; }
+        public uint DataOffset { get; private set; }
+        public uint EntryCount { get; private set; }
+        public uint TocLength { get; private set; }
+        public uint OriginalTocLength { get; private set; }
+        public List<AfaEntryInfo> EntryList { get; private set; }
+        private Byte[] InfoData { get; set; }
         private AFAHDR1 afaHeader1 { get; set; }
         private AFAHDR2 afaHeader2 { get; set; }
 
-        public AliceArch(Stream stream)
+        public AfaArch(Stream stream)
+        {
+            InitAfa(stream);
+        }
+
+        public AfaArch(string filePath)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open))
+            {
+                InitAfa(fs);
+            }
+        }
+        private void InitAfa(Stream stream)
         {
             afaHeader1 = new AFAHDR1();
             afaHeader2 = new AFAHDR2();
@@ -39,12 +53,40 @@ namespace ExGameRes.Model
 
                 InfoData = br.ReadBytes((int)afaHeader2.TocLength);
             }
+
+            //获取文件
+            uint outTocBuffLength = OriginalTocLength;
+            Byte[] outTocBuff = Helper.Decompress(InfoData, ref outTocBuffLength);
+            EntryList = new List<AfaEntryInfo>();
+            using (MemoryStream ms = new MemoryStream(outTocBuff))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                for (int i = 0; i < EntryCount; i++)
+                {
+                    EntryList.Add(GetAfaEntryInfo(Version, br));
+                }
+
+            }
         }
 
-        public static Byte[] ExtracAliceArch(AliceArch aliceArch)
+        private AfaEntryInfo GetAfaEntryInfo(uint Version, BinaryReader br)
         {
-            uint outTocBuffLength = aliceArch.OriginalTocLength;
-            return Helper.Decompress(aliceArch.InfoData, ref outTocBuffLength);
+            var afaEntryInfo = new AfaEntryInfo();
+            var afaEntry1 = afaEntryInfo.afaEntry1;
+            var afaEntry2 = afaEntryInfo.afaEntry2;
+            afaEntry1.FilenameLength = br.ReadUInt32();
+            afaEntry1.FilenameLengthPadded = br.ReadUInt32();
+            afaEntryInfo.Filename = Encoding.Default.GetString(br.ReadBytes((int)afaEntry1.FilenameLength));
+            if (afaEntry1.FilenameLengthPadded > afaEntry1.FilenameLength)
+                br.ReadBytes((int)(afaEntry1.FilenameLengthPadded - afaEntry1.FilenameLength));
+
+            afaEntry2.Unknow1 = br.ReadUInt32();
+            afaEntry2.Unknow2 = br.ReadUInt32();
+            if (Version == 1)
+                afaEntry2.Unknow3 = br.ReadUInt32();
+            afaEntryInfo.Offset = afaEntry2.Offset = br.ReadUInt32();
+            afaEntryInfo.Length = afaEntry2.Length = br.ReadUInt32();
+            return afaEntryInfo;
         }
     }
 
@@ -76,29 +118,18 @@ namespace ExGameRes.Model
         public uint EntryCount { get; set; }
     }
 
-    public class AliceArchEntryInfo
+    public class AfaEntryInfo
     {
-        public string Filename { get; }
-        public uint Offset { get; }
-        public uint Length { get; }
-        private AFAENTRY1 afaEntry1 { get; set; }
-        private AFAENTRY2 afaEntry2 { get; set; }
+        public string Filename { get; set; }
+        public uint Offset { get; set; }
+        public uint Length { get; set; }
+        public AFAENTRY1 afaEntry1 { get; set; }
+        public AFAENTRY2 afaEntry2 { get; set; }
 
-        public AliceArchEntryInfo(uint Version, BinaryReader br)
+        public AfaEntryInfo()
         {
             afaEntry1 = new AFAENTRY1();
             afaEntry2 = new AFAENTRY2();
-            afaEntry1.FilenameLength = br.ReadUInt32();
-            afaEntry1.FilenameLengthPadded = br.ReadUInt32();
-            Filename = Encoding.Default.GetString(br.ReadBytes((int)afaEntry1.FilenameLength));
-            if (afaEntry1.FilenameLengthPadded > afaEntry1.FilenameLength)
-                br.ReadBytes((int)(afaEntry1.FilenameLengthPadded - afaEntry1.FilenameLength));
-
-            afaEntry2.Unknow1 = br.ReadUInt32();
-            afaEntry2.Unknow2 = br.ReadUInt32();
-            if (Version == 1) afaEntry2.Unknow3 = br.ReadUInt32();
-            Offset = afaEntry2.Offset = br.ReadUInt32();
-            Length = afaEntry2.Length = br.ReadUInt32();
         }
     }
 

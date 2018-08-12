@@ -68,7 +68,8 @@ namespace ExGameRes.Model
                     QNTheader.Unknow4 = br.ReadBytes(24);
                 }
                 PixelData = br.ReadBytes((int)PixelTocLength);
-                if (AlphaTocLength > 0) AlphaData = br.ReadBytes((int)AlphaTocLength);
+                if (AlphaTocLength > 0)
+                    AlphaData = br.ReadBytes((int)AlphaTocLength);
             }
         }
 

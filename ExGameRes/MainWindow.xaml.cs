@@ -18,21 +18,6 @@ namespace ExGameRes
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-            Title = $"{Config.Name} -By {Config.Author} -v{Config.Version}";
-            FileList = new ObservableCollection<FileInfoModel>();
-            ListView.ItemsSource = FileList;
-            Binding b = new Binding() { Source = FileList, Path = new PropertyPath("Count") };
-            BindingOperations.SetBinding(progressBar, ProgressBar.MaximumProperty, b);
-
-            AddCharset();
-
-            BgWorker.WorkerReportsProgress = true;
-            BgWorker.DoWork += DoWork_Handler;
-            BgWorker.ProgressChanged += ProgressChanged_Handler;
-        }
 
         private string FilePath
         {
@@ -54,8 +39,29 @@ namespace ExGameRes
                 return DestBox.Text;
             }
         }
-        private ObservableCollection<FileInfoModel> FileList { get; set; }
-        private BackgroundWorker BgWorker = new BackgroundWorker();
+        private ObservableCollection<Object> FileList
+        {
+            get
+            {
+                return mainControl.FileList;
+            }
+        }
+
+        private BackgroundWorker BgWorker
+        {
+            get { return mainControl.BgWorker; }
+        }
+        public MainWindow()
+        {
+            InitializeComponent();
+            Title = $"{Config.Name} -By {Config.Author} -v{Config.Version}";
+            ListView.ItemsSource = FileList;
+
+            SetCharset();
+
+            BgWorker.DoWork += DoWork_Handler;
+            BgWorker.ProgressChanged += BgWorker_ProgressChanged;
+        }
 
         #region event
         private void PathBox_PreviewDrop(object sender, DragEventArgs e)
@@ -71,15 +77,12 @@ namespace ExGameRes
 
         private void ListView_KeyUp(object sender, KeyEventArgs e)
         {
-            if (!BgWorker.IsBusy && e.Key == Key.Delete)
+            if (BgWorker.IsBusy || e.Key != Key.Delete || ListView.SelectedItems.Count == 0)
+                return;
+
+            for (int i = ListView.SelectedItems.Count - 1; i >= 0; i--)
             {
-                if (ListView.SelectedItems.Count > 0)
-                {
-                    for (int i = ListView.SelectedItems.Count - 1; i >= 0; i--)
-                    {
-                        FileList.RemoveAt(ListView.Items.IndexOf(ListView.SelectedItems[i]));
-                    }
-                }
+                FileList.RemoveAt(ListView.Items.IndexOf(ListView.SelectedItems[i]));
             }
         }
 
@@ -90,7 +93,7 @@ namespace ExGameRes
                 if (string.IsNullOrEmpty(FilePath))
                     throw new Exception("文件路径不能为空");
                 FileList.Clear();
-                progressBar.Value = 0;
+                mainControl.ProgressBar.Value = 0;
                 Analyse();
             });
         }
@@ -99,100 +102,115 @@ namespace ExGameRes
         {
             Helper.TryHandler(() =>
             {
-                if (string.IsNullOrEmpty(FilePath))
-                    throw new Exception("文件路径不能为空");
                 Directory.CreateDirectory(DirPath);
                 if (!BgWorker.IsBusy)
                 {
                     OperationBox.IsEnabled = false;
-                    PathInfoModel pim = new PathInfoModel() { ResFilePath = FilePath, DestDirPath = DirPath };
+                    PathInfoModel pim = new PathInfoModel() { DestDirPath = DirPath };
                     BgWorker.RunWorkerAsync(pim);//开始运行DoWork_Handler里的功能
                 }
             });
         }
 
-        private void DoWork_Handler(object sender, DoWorkEventArgs args)
+        private void BgWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            BackgroundWorker bgWorker = sender as BackgroundWorker;
-            bgWorker.ReportProgress(0);
-            PathInfoModel pi = args.Argument as PathInfoModel;
-            if (pi != null)
-            {
-                using (FileStream fs = new FileStream(pi.ResFilePath, FileMode.Open))
-                {
-                    using (BinaryReader br = new BinaryReader(fs))
-                    {
-                        int i = 0;
-                        foreach (FileInfoModel x in FileList)
-                        {
-                            fs.Seek(x.Offset, SeekOrigin.Begin);
-                            Helper.WriteBytesToFile(Path.Combine(pi.DestDirPath, x.Filename), br.ReadBytes((int)x.Length));
-                            ++i;
-                            BgWorker.ReportProgress(i);
-                        }
-                    }
-                }
-                bgWorker = null;
-                pi = null;
-                GC.Collect();
-            }
-        }
-
-        private void ProgressChanged_Handler(object sender, ProgressChangedEventArgs args)
-        {
-            //这里更新ui   
-            progressBar.Value = args.ProgressPercentage;
-            messageView.Text = $"{progressBar.Value}/{progressBar.Maximum}";
-            if (progressBar.Value == progressBar.Maximum)
+            if (mainControl.ProgressBar.Value == mainControl.ProgressBar.Maximum)
             {
                 OperationBox.IsEnabled = true;
-                messageView.Text += " Finished Time:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             }
         }
+
+        private void DoWork_Handler(object sender, DoWorkEventArgs args)
+        {
+            var pi = args.Argument as PathInfoModel;
+            if (pi == null || FileList.Count == 0)
+                return;
+
+            var bgWorker = sender as BackgroundWorker;
+            bgWorker.ReportProgress(0);
+            var filePath = (FileList[0] as FileInfoModel).FilePath;
+            using (FileStream fs = new FileStream(filePath, FileMode.Open))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                int i = 0;
+                foreach (FileInfoModel x in FileList)
+                {
+                    fs.Seek(x.Offset, SeekOrigin.Begin);
+                    Helper.WriteBytesToFile(Path.Combine(pi.DestDirPath, x.Filename), br.ReadBytes((int)x.Length));
+                    ++i;
+                    BgWorker.ReportProgress(i);
+                }
+            }
+            GC.Collect();
+        }
+
+
         #endregion
 
-        private void AddCharset()
+        private void SetCharset()
         {
             var list = new List<Object>();
             foreach (EncodingInfo ei in Encoding.GetEncodings())
             {
                 Encoding e = ei.GetEncoding();
-                if (true)
-                {
-                    //Console.Write("{0,-18} ", ei.Name);
-                    //Console.Write("{0,-9} ", e.CodePage);
-                    //Console.Write("{0,-18} ", e.BodyName);
-                    //Console.Write("{0,-18} ", e.HeaderName);
-                    //Console.Write("{0,-18} ", e.WebName);
-                    //Console.WriteLine("{0} ", e.EncodingName);
-                    list.Add(new MyEncoding(e));
-                }
+                list.Add(new MyEncoding(e));
             }
             CharsetBox.ItemsSource = list;
         }
 
-        private Encoding encoding;
         private void Analyse()
         {
             var fileType = "";
-            using (FileStream fs = new FileStream(FilePath, FileMode.Open))
-            using (BinaryReader br = new BinaryReader(fs))
+            var ext = Path.GetExtension(FilePath);
+            if (string.Compare(ext, "." + Config.Signature.Ald, true) == 0)
             {
-                var signature = Encoding.Default.GetString(br.ReadBytes(4));
-                if (signature == Config.Signature.AFAH)
+                fileType = Config.Signature.Ald;
+            }
+            else
+            {
+                using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+                using (BinaryReader br = new BinaryReader(fs))
                 {
-                    fs.Seek(4, SeekOrigin.Current);
-                    signature = Encoding.Default.GetString(br.ReadBytes(8));
-                    if (signature == Config.Signature.AlicArch)
+                    var signature = Encoding.Default.GetString(br.ReadBytes(4));
+                    if (signature == Config.Signature.AFAH)
                     {
-                        fileType = Config.Signature.AFAH;
+                        fs.Seek(4, SeekOrigin.Current);
+                        signature = Encoding.Default.GetString(br.ReadBytes(8));
+                        if (signature == Config.Signature.AlicArch)
+                        {
+                            fileType = Config.Signature.AFA;
+                        }
                     }
-                }
 
+                }
             }
 
-            //编码
-            encoding = null;
+            var desc = DescView.Text = "";
+            if (fileType == Config.Signature.AFA)
+            {
+                var x = AnalyseAfa();
+                desc = string.Join("\r\n", new string[]
+                {
+                    $"Company: {Config.Signature.AliceSoft}",
+                    $"FileType: {Config.Signature.AFA}",
+                    $"Version: {x.Version}",
+                });
+            }
+            else if (fileType == Config.Signature.Ald)
+            {
+                var x = AnalyseAld();
+                desc = string.Join("\r\n", new string[]
+                {
+                    $"Company: {Config.Signature.AliceSoft}",
+                    $"FileType: {Config.Signature.Ald}",
+                });
+            }
+            else
+            {
+                throw new MyException("不支持的文件格式");
+            }
+            #region 编码
+            Encoding encoding = null;
             var selectedItem = CharsetBox.SelectedItem as MyEncoding;
             if (selectedItem != null)
             {
@@ -202,59 +220,56 @@ namespace ExGameRes
             {
                 encoding = Encoding.GetEncoding(CharsetBox.Text.Trim());
             }
-            var desc = "";
-            switch (fileType)
+
+            if (encoding != null)
             {
-                case Config.Signature.AFAH:
-                    var x = AnalyseAfa();
-                    desc = string.Join("\r\n", new string[] {
-                        $"Company: {Config.Signature.AliceSoft}",
-                        $"FileType: {Config.Signature.AFA}",
-                        $"Version: {x.Version}",
-                    });
-                    break;
-                default:
-                    throw new MyException("不支持的文件格式");
+                for (var i = 0; i < FileList.Count; i++)
+                {
+                    var fileInfo = FileList[i] as FileInfoModel;
+                    fileInfo.Filename = Encode(fileInfo.Filename, encoding);
+                }
             }
+            #endregion
             DescView.Text = desc;
         }
 
-        private AliceArch AnalyseAfa()
+        private AfaArch AnalyseAfa()
         {
-            AliceArch aliceArch;
-            using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+            var afaArch = new AfaArch(FilePath);
+            for (int i = 0; i < afaArch.EntryList.Count; i++)
             {
-                aliceArch = new AliceArch(fs);
-            }
-            Byte[] outTocBuff = AliceArch.ExtracAliceArch(aliceArch);
-
-            #region 获取文件信息
-            using (MemoryStream ms = new MemoryStream(outTocBuff))
-            using (BinaryReader br = new BinaryReader(ms))
-            {
-                for (int i = 0; i < aliceArch.EntryCount; i++)
+                var aliceArchEntryInfo = afaArch.EntryList[i];
+                var fileInfo = new FileInfoModel()
                 {
-                    AliceArchEntryInfo aliceArchEntryInfo = new AliceArchEntryInfo(aliceArch.Version, br);
-                    FileInfoModel fileInfo = new FileInfoModel()
-                    {
-                        Filename = aliceArchEntryInfo.Filename,
-                        Offset = aliceArch.DataOffset + aliceArchEntryInfo.Offset,
-                        Length = aliceArchEntryInfo.Length
-                    };
-
-                    if (encoding != null)
-                    {
-                        fileInfo.Filename = Encoder(fileInfo.Filename);
-                    }
-                    FileList.Add(fileInfo);
-                }
-
+                    FilePath = FilePath,
+                    Filename = aliceArchEntryInfo.Filename,
+                    Offset = afaArch.DataOffset + aliceArchEntryInfo.Offset,
+                    Length = aliceArchEntryInfo.Length
+                };
+                FileList.Add(fileInfo);
             }
-            return aliceArch;
-            #endregion
+            return afaArch;
         }
 
-        private string Encoder(string str)
+        private AldArch AnalyseAld()
+        {
+            var aldArch = new AldArch(FilePath);
+            for (int i = 0; i < aldArch.EntryList.Count; i++)
+            {
+                var aliceArchEntryInfo = aldArch.EntryList[i];
+                var fileInfo = new FileInfoModel()
+                {
+                    FilePath = FilePath,
+                    Filename = aliceArchEntryInfo.Filename,
+                    Offset = aliceArchEntryInfo.Offset,
+                    Length = aliceArchEntryInfo.Length
+                };
+                FileList.Add(fileInfo);
+            }
+            return aldArch;
+        }
+
+        private string Encode(string str, Encoding encoding)
         {
             Encoding defaultEncoding = Encoding.Default;
             return encoding.GetString(defaultEncoding.GetBytes(str));
@@ -263,6 +278,7 @@ namespace ExGameRes
 
     public class FileInfoModel
     {
+        public string FilePath;
         public string Filename { get; set; }
 
         public uint Offset { get; set; }

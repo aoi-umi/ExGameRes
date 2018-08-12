@@ -32,19 +32,17 @@
                 <CheckBox Name="IsMergeDCFBox" Grid.Row="1" Grid.Column="1" IsChecked="True" VerticalAlignment="Center">合并dcf</CheckBox>
                 <Button Click="Clear_Click" Grid.Row="1" Grid.Column="2" Margin="2">清除</Button>
             </Grid>
-            <StackPanel DockPanel.Dock="Bottom" Margin="2">
-                <ProgressBar Height="15" Name="progressBar" Value="0"></ProgressBar>
-                <TextBlock Name="messageView"></TextBlock>
-            </StackPanel>
-            <ListView Name="listView" Margin="2" KeyUp="listView_KeyUp" Drop="listView_Drop" MouseMove="listView_MouseMove" AllowDrop="True">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />
-                        <GridViewColumn DisplayMemberBinding="{Binding Path=Desc}" Header="Desc" Width="80" />
-                        <GridViewColumn DisplayMemberBinding="{Binding Path=NewFilename}" Header="Output" Width="250" />
-                    </GridView>
-                </ListView.View>
-            </ListView>
+            <local:MainControl x:Name="mainControl">
+                <ListView Name="listView" Margin="2" KeyUp="listView_KeyUp" Drop="listView_Drop" MouseMove="listView_MouseMove" AllowDrop="True">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=Desc}" Header="Desc" Width="80" />
+                            <GridViewColumn DisplayMemberBinding="{Binding Path=NewFilename}" Header="Output" Width="250" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </local:MainControl>
         </DockPanel>
     </Grid>
 </UserControl>

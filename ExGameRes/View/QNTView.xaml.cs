@@ -24,19 +24,6 @@ namespace ExGameRes
     /// </summary>
     public partial class QNTView : UserControl
     {
-        public QNTView()
-        {
-            InitializeComponent();
-            DataContext = BgWorker;
-            FileList = new ObservableCollection<QNTFileInfoModel>();
-            listView.ItemsSource = FileList;
-            Binding b = new Binding() { Source = FileList, Path = new PropertyPath("Count") };
-            BindingOperations.SetBinding(progressBar, ProgressBar.MaximumProperty, b);
-            BgWorker.WorkerReportsProgress = true;
-            BgWorker.DoWork += DoWork_Handler;
-            BgWorker.ProgressChanged += ProgressChanged_Handler;
-        }
-
         private string FilePath
         {
             get { return PathBox.Text; }
@@ -47,8 +34,26 @@ namespace ExGameRes
         {
             get { return (bool)IsMergeDCFBox.IsChecked; }
         }
-        private ObservableCollection<QNTFileInfoModel> FileList { get; set; }
-        private BackgroundWorker BgWorker = new BackgroundWorker();
+        private ObservableCollection<Object> FileList
+        {
+            get
+            {
+                return mainControl.FileList;
+            }
+        }
+
+        private BackgroundWorker BgWorker
+        {
+            get { return mainControl.BgWorker; }
+        }
+        public QNTView()
+        {
+            InitializeComponent();
+            //DataContext = BgWorker;
+            listView.ItemsSource = FileList;
+            BgWorker.DoWork += DoWork_Handler;
+            BgWorker.ProgressChanged += ProgressChanged_Handler;
+        }
 
         #region event
         private void PathBox_PreviewDrop(object sender, DragEventArgs e)
@@ -64,17 +69,13 @@ namespace ExGameRes
 
         private void listView_KeyUp(object sender, KeyEventArgs e)
         {
-            if (BgWorker.IsBusy || e.Key != Key.Delete)
+            if (BgWorker.IsBusy || e.Key != Key.Delete || listView.SelectedItems.Count == 0)
                 return;
-            if (listView.SelectedItems.Count > 0)
-            {
-                progressBar.Value = 0;
-                for (int i = listView.SelectedItems.Count - 1; i >= 0; i--)
-                {
-                    FileList.RemoveAt(listView.Items.IndexOf(listView.SelectedItems[i]));
-                }
-            }
 
+            for (int i = listView.SelectedItems.Count - 1; i >= 0; i--)
+            {
+                FileList.RemoveAt(listView.Items.IndexOf(listView.SelectedItems[i]));
+            }
         }
 
         private void listView_Drop(object sender, DragEventArgs e)
@@ -84,7 +85,6 @@ namespace ExGameRes
             var format = e.Data.GetFormats();
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                progressBar.Value = 0;
                 Array list = e.Data.GetData(DataFormats.FileDrop) as Array;
                 foreach (var l in list)
                 {
@@ -183,12 +183,9 @@ namespace ExGameRes
         private void ProgressChanged_Handler(object sender, ProgressChangedEventArgs args)
         {
             //这里更新ui   
-            progressBar.Value = args.ProgressPercentage;
-            messageView.Text = $"{progressBar.Value}/{progressBar.Maximum}";
-            if (progressBar.Value == progressBar.Maximum)
+            if (mainControl.ProgressBar.Value == mainControl.ProgressBar.Maximum)
             {
                 OperationBox.IsEnabled = true;
-                messageView.Text += " Finished Time:" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             }
         }
         #endregion BackgroundWorker
