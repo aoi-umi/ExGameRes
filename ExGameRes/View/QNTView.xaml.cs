@@ -49,7 +49,6 @@ namespace ExGameRes
         public QNTView()
         {
             InitializeComponent();
-            //DataContext = BgWorker;
             listView.ItemsSource = FileList;
             BgWorker.DoWork += DoWork_Handler;
             BgWorker.ProgressChanged += ProgressChanged_Handler;
@@ -67,7 +66,7 @@ namespace ExGameRes
             e.Handled = true;
         }
 
-        private void listView_KeyUp(object sender, KeyEventArgs e)
+        private void ListView_KeyUp(object sender, KeyEventArgs e)
         {
             if (BgWorker.IsBusy || e.Key != Key.Delete || listView.SelectedItems.Count == 0)
                 return;
@@ -78,7 +77,7 @@ namespace ExGameRes
             }
         }
 
-        private void listView_Drop(object sender, DragEventArgs e)
+        private void ListView_Drop(object sender, DragEventArgs e)
         {
             if (BgWorker.IsBusy)
                 return;
@@ -112,7 +111,7 @@ namespace ExGameRes
             }
         }
 
-        private void listView_MouseMove(object sender, MouseEventArgs e)
+        private void ListView_MouseMove(object sender, MouseEventArgs e)
         {
             if (BgWorker.IsBusy || e.LeftButton != MouseButtonState.Pressed)
                 return;

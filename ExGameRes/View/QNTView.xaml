@@ -32,8 +32,8 @@
                 <CheckBox Name="IsMergeDCFBox" Grid.Row="1" Grid.Column="1" IsChecked="True" VerticalAlignment="Center">合并dcf</CheckBox>
                 <Button Click="Clear_Click" Grid.Row="1" Grid.Column="2" Margin="2">清除</Button>
             </Grid>
-            <local:MainControl x:Name="mainControl">
-                <ListView Name="listView" Margin="2" KeyUp="listView_KeyUp" Drop="listView_Drop" MouseMove="listView_MouseMove" AllowDrop="True">
+            <local:MainControl x:Name="mainControl" Margin="2">
+                <ListView Name="listView" BorderThickness="0" KeyUp="ListView_KeyUp" Drop="ListView_Drop" MouseMove="ListView_MouseMove" AllowDrop="True">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn DisplayMemberBinding="{Binding Path=Filename}" Header="Filename" Width="250" />

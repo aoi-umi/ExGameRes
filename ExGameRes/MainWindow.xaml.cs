@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Linq;
 
 namespace ExGameRes
 {
@@ -54,7 +55,7 @@ namespace ExGameRes
         public MainWindow()
         {
             InitializeComponent();
-            Title = $"{Config.Name} -By {Config.Author} -v{Config.Version}";
+            Title = $"{Config.Name} -v{Config.Version}";
             ListView.ItemsSource = FileList;
 
             SetCharset();
@@ -102,13 +103,12 @@ namespace ExGameRes
         {
             Helper.TryHandler(() =>
             {
+                if (BgWorker.IsBusy)
+                    return;
                 Directory.CreateDirectory(DirPath);
-                if (!BgWorker.IsBusy)
-                {
-                    OperationBox.IsEnabled = false;
-                    PathInfoModel pim = new PathInfoModel() { DestDirPath = DirPath };
-                    BgWorker.RunWorkerAsync(pim);//开始运行DoWork_Handler里的功能
-                }
+                OperationBox.IsEnabled = false;
+                PathInfoModel pim = new PathInfoModel() { DestDirPath = DirPath };
+                BgWorker.RunWorkerAsync(pim);//开始运行DoWork_Handler里的功能
             });
         }
 
@@ -122,8 +122,7 @@ namespace ExGameRes
 
         private void DoWork_Handler(object sender, DoWorkEventArgs args)
         {
-            var pi = args.Argument as PathInfoModel;
-            if (pi == null || FileList.Count == 0)
+            if (!(args.Argument is PathInfoModel pi) || FileList.Count == 0)
                 return;
 
             var bgWorker = sender as BackgroundWorker;
@@ -144,7 +143,11 @@ namespace ExGameRes
             GC.Collect();
         }
 
-
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new AboutView();
+            dialog.ShowDialog();
+        }
         #endregion
 
         private void SetCharset()
@@ -158,11 +161,16 @@ namespace ExGameRes
             CharsetBox.ItemsSource = list;
         }
 
+        #region Analyse
         private void Analyse()
         {
+            var desc = DescView.Text = "";
+            List<FileInfoModel> entryList;
+
+            #region analyse file type
             var fileType = "";
             var ext = Path.GetExtension(FilePath);
-            if (string.Compare(ext, "." + Config.Signature.Ald, true) == 0)
+            if (string.Equals(ext, "." + Config.Signature.Ald, StringComparison.CurrentCultureIgnoreCase))
             {
                 fileType = Config.Signature.Ald;
             }
@@ -184,35 +192,45 @@ namespace ExGameRes
 
                 }
             }
+            #endregion
 
-            var desc = DescView.Text = "";
+            #region Analyse
             if (fileType == Config.Signature.AFA)
             {
-                var x = AnalyseAfa();
+                var x = new AfaArch(FilePath);
                 desc = string.Join("\r\n", new string[]
                 {
                     $"Company: {Config.Signature.AliceSoft}",
                     $"FileType: {Config.Signature.AFA}",
                     $"Version: {x.Version}",
                 });
+                entryList = x.EntryList.ConvertAll(ele => (FileInfoModel)ele);
             }
             else if (fileType == Config.Signature.Ald)
             {
-                var x = AnalyseAld();
+                var x = new AldArch(FilePath);
                 desc = string.Join("\r\n", new string[]
                 {
                     $"Company: {Config.Signature.AliceSoft}",
                     $"FileType: {Config.Signature.Ald}",
                 });
+                entryList = x.EntryList.ConvertAll(ele => (FileInfoModel)ele);
             }
             else
             {
                 throw new MyException("不支持的文件格式");
             }
+            #endregion
+
+            foreach (var fileInfo in entryList)
+            {
+                fileInfo.FilePath = FilePath;
+                FileList.Add(fileInfo);
+            }
+
             #region 编码
             Encoding encoding = null;
-            var selectedItem = CharsetBox.SelectedItem as MyEncoding;
-            if (selectedItem != null)
+            if (CharsetBox.SelectedItem is MyEncoding selectedItem)
             {
                 encoding = selectedItem.encoding;
             }
@@ -226,70 +244,17 @@ namespace ExGameRes
                 for (var i = 0; i < FileList.Count; i++)
                 {
                     var fileInfo = FileList[i] as FileInfoModel;
-                    fileInfo.Filename = Encode(fileInfo.Filename, encoding);
+                    fileInfo.Filename = Helper.Encode(fileInfo.Filename, encoding);
                 }
             }
             #endregion
             DescView.Text = desc;
         }
-
-        private AfaArch AnalyseAfa()
-        {
-            var afaArch = new AfaArch(FilePath);
-            for (int i = 0; i < afaArch.EntryList.Count; i++)
-            {
-                var aliceArchEntryInfo = afaArch.EntryList[i];
-                var fileInfo = new FileInfoModel()
-                {
-                    FilePath = FilePath,
-                    Filename = aliceArchEntryInfo.Filename,
-                    Offset = afaArch.DataOffset + aliceArchEntryInfo.Offset,
-                    Length = aliceArchEntryInfo.Length
-                };
-                FileList.Add(fileInfo);
-            }
-            return afaArch;
-        }
-
-        private AldArch AnalyseAld()
-        {
-            var aldArch = new AldArch(FilePath);
-            for (int i = 0; i < aldArch.EntryList.Count; i++)
-            {
-                var aliceArchEntryInfo = aldArch.EntryList[i];
-                var fileInfo = new FileInfoModel()
-                {
-                    FilePath = FilePath,
-                    Filename = aliceArchEntryInfo.Filename,
-                    Offset = aliceArchEntryInfo.Offset,
-                    Length = aliceArchEntryInfo.Length
-                };
-                FileList.Add(fileInfo);
-            }
-            return aldArch;
-        }
-
-        private string Encode(string str, Encoding encoding)
-        {
-            Encoding defaultEncoding = Encoding.Default;
-            return encoding.GetString(defaultEncoding.GetBytes(str));
-        }
-    }
-
-    public class FileInfoModel
-    {
-        public string FilePath;
-        public string Filename { get; set; }
-
-        public uint Offset { get; set; }
-
-        public uint Length { get; set; }
+        #endregion
     }
 
     public class PathInfoModel
     {
-        public string ResFilePath { get; set; }
-
         public string DestDirPath { get; set; }
     }
 
@@ -300,7 +265,7 @@ namespace ExGameRes
         {
             get
             {
-                return encoding.EncodingName + "(" + encoding.WebName + ")";
+                return $"{encoding.EncodingName}({encoding.WebName})";
             }
         }
         public MyEncoding(Encoding e)

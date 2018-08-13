@@ -13,7 +13,15 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <TabControl>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Menu Grid.Row="0" Height="23" Margin="0,0,0,5" BorderThickness="0.6" BorderBrush="Black">
+            <MenuItem Header="关于" Click="About_Click">
+            </MenuItem>
+        </Menu>
+        <TabControl Grid.Row="1" Margin="2">
             <TabItem Header="解包">
                 <DockPanel>
                     <Grid x:Name="OperationBox" DockPanel.Dock="Top" Margin="2">

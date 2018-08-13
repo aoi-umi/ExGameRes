@@ -40,7 +40,7 @@ namespace ExGameRes.Model
                     stream.Position = address;
                     uint headerLength = br.ReadUInt32();
                     aldEntryInfo.Length = br.ReadUInt32();
-                    
+
                     stream.Position = address;
                     var fileHeader = br.ReadBytes((int)headerLength);
                     aldEntryInfo.Offset = address + headerLength;
@@ -61,10 +61,7 @@ namespace ExGameRes.Model
         }
     }
 
-    public class AldEntryInfo
+    public class AldEntryInfo : FileInfoModel
     {
-        public string Filename { get; set; }
-        public uint Offset { get; set; }
-        public uint Length { get; set; }
     }
 }

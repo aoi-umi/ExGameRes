@@ -16,6 +16,6 @@
         public const string Name = "ExGameRes";
         public const string Author = "umi-aoi";
         public const string Version = "0.0.5";
-
+        public const string SourceCode = "https://github.com/aoi-umi/ExGameRes";
     }
 }

@@ -14,8 +14,8 @@ namespace ExGameRes.Model
         public uint OriginalTocLength { get; private set; }
         public List<AfaEntryInfo> EntryList { get; private set; }
         private Byte[] InfoData { get; set; }
-        private AFAHDR1 afaHeader1 { get; set; }
-        private AFAHDR2 afaHeader2 { get; set; }
+        private AFAHDR1 AfaHeader1 { get; set; }
+        private AFAHDR2 AfaHeader2 { get; set; }
 
         public AfaArch(Stream stream)
         {
@@ -31,27 +31,27 @@ namespace ExGameRes.Model
         }
         private void InitAfa(Stream stream)
         {
-            afaHeader1 = new AFAHDR1();
-            afaHeader2 = new AFAHDR2();
+            AfaHeader1 = new AFAHDR1();
+            AfaHeader2 = new AFAHDR2();
             using (BinaryReader br = new BinaryReader(stream))
             {
-                afaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
-                if (afaHeader1.Signature != Config.Signature.AFAH)
+                AfaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
+                if (AfaHeader1.Signature != Config.Signature.AFAH)
                     throw new MyException(Config.Signature.AFAH, MyException.ErrorTypeEnum.FileTypeError);
-                afaHeader1.Length = br.ReadUInt32();
-                afaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
-                if (afaHeader1.Signature2 != Config.Signature.AlicArch)
+                AfaHeader1.Length = br.ReadUInt32();
+                AfaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
+                if (AfaHeader1.Signature2 != Config.Signature.AlicArch)
                     throw new MyException(Config.Signature.AlicArch, MyException.ErrorTypeEnum.FileTypeError);
-                Version = afaHeader1.Version = br.ReadUInt32();
-                afaHeader1.Unknow = br.ReadUInt32();
-                DataOffset = afaHeader1.Offset = br.ReadUInt32();
+                Version = AfaHeader1.Version = br.ReadUInt32();
+                AfaHeader1.Unknow = br.ReadUInt32();
+                DataOffset = AfaHeader1.Offset = br.ReadUInt32();
 
-                afaHeader2.Signature = Encoding.Default.GetString(br.ReadBytes(4));
-                TocLength = afaHeader2.TocLength = br.ReadUInt32();
-                OriginalTocLength = afaHeader2.OriginalTocLength = br.ReadUInt32();
-                EntryCount = afaHeader2.EntryCount = br.ReadUInt32();
+                AfaHeader2.Signature = Encoding.Default.GetString(br.ReadBytes(4));
+                TocLength = AfaHeader2.TocLength = br.ReadUInt32();
+                OriginalTocLength = AfaHeader2.OriginalTocLength = br.ReadUInt32();
+                EntryCount = AfaHeader2.EntryCount = br.ReadUInt32();
 
-                InfoData = br.ReadBytes((int)afaHeader2.TocLength);
+                InfoData = br.ReadBytes((int)AfaHeader2.TocLength);
             }
 
             //获取文件
@@ -72,8 +72,8 @@ namespace ExGameRes.Model
         private AfaEntryInfo GetAfaEntryInfo(uint Version, BinaryReader br)
         {
             var afaEntryInfo = new AfaEntryInfo();
-            var afaEntry1 = afaEntryInfo.afaEntry1;
-            var afaEntry2 = afaEntryInfo.afaEntry2;
+            var afaEntry1 = afaEntryInfo.AfaEntry1;
+            var afaEntry2 = afaEntryInfo.AfaEntry2;
             afaEntry1.FilenameLength = br.ReadUInt32();
             afaEntry1.FilenameLengthPadded = br.ReadUInt32();
             afaEntryInfo.Filename = Encoding.Default.GetString(br.ReadBytes((int)afaEntry1.FilenameLength));
@@ -84,7 +84,8 @@ namespace ExGameRes.Model
             afaEntry2.Unknow2 = br.ReadUInt32();
             if (Version == 1)
                 afaEntry2.Unknow3 = br.ReadUInt32();
-            afaEntryInfo.Offset = afaEntry2.Offset = br.ReadUInt32();
+            afaEntry2.Offset = br.ReadUInt32();
+            afaEntryInfo.Offset = afaEntry2.Offset + DataOffset;
             afaEntryInfo.Length = afaEntry2.Length = br.ReadUInt32();
             return afaEntryInfo;
         }
@@ -118,18 +119,15 @@ namespace ExGameRes.Model
         public uint EntryCount { get; set; }
     }
 
-    public class AfaEntryInfo
+    public class AfaEntryInfo : FileInfoModel
     {
-        public string Filename { get; set; }
-        public uint Offset { get; set; }
-        public uint Length { get; set; }
-        public AFAENTRY1 afaEntry1 { get; set; }
-        public AFAENTRY2 afaEntry2 { get; set; }
+        public AFAENTRY1 AfaEntry1 { get; set; }
+        public AFAENTRY2 AfaEntry2 { get; set; }
 
         public AfaEntryInfo()
         {
-            afaEntry1 = new AFAENTRY1();
-            afaEntry2 = new AFAENTRY2();
+            AfaEntry1 = new AFAENTRY1();
+            AfaEntry2 = new AFAENTRY2();
         }
     }
 

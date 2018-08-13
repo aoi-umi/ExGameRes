@@ -91,13 +91,12 @@ namespace ExGameRes
         public static string GetHeader(string filePath)
         {
             string header = string.Empty;
-            using (FileStream fs = new FileStream(filePath, FileMode.Open))
+            using (var fs = new FileStream(filePath, FileMode.Open))
+            using (var br = new BinaryReader(fs))
             {
-                using (BinaryReader br = new BinaryReader(fs))
-                {
-                    header = Encoding.Default.GetString(br.ReadBytes(4));
-                }
+                header = Encoding.Default.GetString(br.ReadBytes(4));
             }
+
             return header;
         }
 
@@ -151,6 +150,12 @@ namespace ExGameRes
             Byte[] b = new Byte[length];
             Array.Copy(src, startPos, b, 0, length);
             return b;
+        }
+
+        public static string Encode(string str, Encoding encoding)
+        {
+            Encoding defaultEncoding = Encoding.Default;
+            return encoding.GetString(defaultEncoding.GetBytes(str));
         }
     }
 

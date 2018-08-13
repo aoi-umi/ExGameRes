@@ -103,7 +103,11 @@
     <Compile Include="Controls\MainControl.cs" />
     <Compile Include="Model\AldArch.cs" />
     <Compile Include="Model\DCF.cs" />
+    <Compile Include="Model\MainModel.cs" />
     <Compile Include="Model\QNT.cs" />
+    <Compile Include="View\AboutView.xaml.cs">
+      <DependentUpon>AboutView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="View\QNTView.xaml.cs">
       <DependentUpon>QNTView.xaml</DependentUpon>
     </Compile>
@@ -123,6 +127,10 @@
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\AboutView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="View\QNTView.xaml">
       <SubType>Designer</SubType>
