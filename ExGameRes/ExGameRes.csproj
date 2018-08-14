@@ -101,10 +101,11 @@
     <Compile Include="Config.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Controls\MainControl.cs" />
+    <Compile Include="Model\Ajp.cs" />
     <Compile Include="Model\AldArch.cs" />
-    <Compile Include="Model\DCF.cs" />
+    <Compile Include="Model\Dcf.cs" />
     <Compile Include="Model\MainModel.cs" />
-    <Compile Include="Model\QNT.cs" />
+    <Compile Include="Model\Qnt.cs" />
     <Compile Include="View\AboutView.xaml.cs">
       <DependentUpon>AboutView.xaml</DependentUpon>
     </Compile>

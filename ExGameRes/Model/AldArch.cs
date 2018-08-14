@@ -51,10 +51,7 @@ namespace ExGameRes.Model
                         break;
                     stream.Position = namePos;
                     var nameBytes = br.ReadBytes(16);
-                    var lastIndex = nameBytes.ToList().FindLastIndex(x => x != 0);
-                    if (lastIndex >= 0 && lastIndex != 15)
-                        nameBytes = Helper.GetBytes(nameBytes, 0, lastIndex + 1);
-                    aldEntryInfo.Filename = Encoding.Default.GetString(nameBytes);
+                    aldEntryInfo.Filename = Helper.BytesToString(nameBytes);
                     EntryList.Add(aldEntryInfo);
                 }
             }

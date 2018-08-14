@@ -179,11 +179,11 @@ namespace ExGameRes
                 using (FileStream fs = new FileStream(FilePath, FileMode.Open))
                 using (BinaryReader br = new BinaryReader(fs))
                 {
-                    var signature = Encoding.Default.GetString(br.ReadBytes(4));
+                    var signature = Helper.BytesToString(br.ReadBytes(4));
                     if (signature == Config.Signature.AFAH)
                     {
                         fs.Seek(4, SeekOrigin.Current);
-                        signature = Encoding.Default.GetString(br.ReadBytes(8));
+                        signature = Helper.BytesToString(br.ReadBytes(8));
                         if (signature == Config.Signature.AlicArch)
                         {
                             fileType = Config.Signature.AFA;

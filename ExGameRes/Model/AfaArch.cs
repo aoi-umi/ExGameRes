@@ -35,18 +35,18 @@ namespace ExGameRes.Model
             AfaHeader2 = new AFAHDR2();
             using (BinaryReader br = new BinaryReader(stream))
             {
-                AfaHeader1.Signature = Encoding.Default.GetString(br.ReadBytes(4));
+                AfaHeader1.Signature = Helper.BytesToString(br.ReadBytes(4));
                 if (AfaHeader1.Signature != Config.Signature.AFAH)
                     throw new MyException(Config.Signature.AFAH, MyException.ErrorTypeEnum.FileTypeError);
                 AfaHeader1.Length = br.ReadUInt32();
-                AfaHeader1.Signature2 = Encoding.Default.GetString(br.ReadBytes(8));
+                AfaHeader1.Signature2 = Helper.BytesToString(br.ReadBytes(8));
                 if (AfaHeader1.Signature2 != Config.Signature.AlicArch)
                     throw new MyException(Config.Signature.AlicArch, MyException.ErrorTypeEnum.FileTypeError);
                 Version = AfaHeader1.Version = br.ReadUInt32();
                 AfaHeader1.Unknow = br.ReadUInt32();
                 DataOffset = AfaHeader1.Offset = br.ReadUInt32();
 
-                AfaHeader2.Signature = Encoding.Default.GetString(br.ReadBytes(4));
+                AfaHeader2.Signature = Helper.BytesToString(br.ReadBytes(4));
                 TocLength = AfaHeader2.TocLength = br.ReadUInt32();
                 OriginalTocLength = AfaHeader2.OriginalTocLength = br.ReadUInt32();
                 EntryCount = AfaHeader2.EntryCount = br.ReadUInt32();
@@ -76,7 +76,7 @@ namespace ExGameRes.Model
             var afaEntry2 = afaEntryInfo.AfaEntry2;
             afaEntry1.FilenameLength = br.ReadUInt32();
             afaEntry1.FilenameLengthPadded = br.ReadUInt32();
-            afaEntryInfo.Filename = Encoding.Default.GetString(br.ReadBytes((int)afaEntry1.FilenameLength));
+            afaEntryInfo.Filename = Helper.BytesToString(br.ReadBytes((int)afaEntry1.FilenameLength));
             if (afaEntry1.FilenameLengthPadded > afaEntry1.FilenameLength)
                 br.ReadBytes((int)(afaEntry1.FilenameLengthPadded - afaEntry1.FilenameLength));
 

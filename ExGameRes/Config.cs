@@ -6,11 +6,13 @@
         {
             public const string AliceSoft = "AliceSoft";
             public const string AFA = "AFA";
+
             public const string AFAH = "AFAH";
+            public const string Ald = "ald";
             public const string AlicArch = "AlicArch";
             public const string QNT = "QNT";
             public const string DCF = "dcf";
-            public const string Ald = "ald";
+            public const string AJP = "AJP";
         }
 
         public const string Name = "ExGameRes";

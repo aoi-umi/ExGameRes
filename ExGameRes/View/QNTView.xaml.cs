@@ -132,28 +132,31 @@ namespace ExGameRes
             {
                 try
                 {
-                    QNT qnt = null;
+                    Qnt qnt = null;
                     string fullPath = Path.Combine(qntInfo.Path, qntInfo.Filename);
                     string header = Helper.GetHeader(fullPath);
                     Byte[] bmpBuff = null;
-                    switch (header.Substring(0, 3))
+                    switch (header)
                     {
                         case Config.Signature.QNT:
-                            qnt = new QNT(fullPath);
-                            bmpBuff = QNT.ExtractQNT(qnt);
+                            qnt = new Qnt(fullPath);
+                            bmpBuff = Qnt.ExtractQNT(qnt);
                             if (isMergeDCF) lastQNTData = bmpBuff;
                             break;
                         case Config.Signature.DCF:
-                            DCF dcf = new DCF(fullPath);
+                            Dcf dcf = new Dcf(fullPath);
                             MemoryStream ms = new MemoryStream(dcf.DCGDData);
-                            qnt = new QNT(ms);
-                            bmpBuff = QNT.ExtractQNT(qnt);
+                            qnt = new Qnt(ms);
+                            bmpBuff = Qnt.ExtractQNT(qnt);
                             if (isMergeDCF && qnt.AlphaTocLength == 0)
                             {
                                 if (lastQNTData == null)
                                     throw new MyException("合并源为空");
                                 Helper.MergeBMPData(lastQNTData, bmpBuff, dcf.MaskData);
                             }
+                            break;
+                        case Config.Signature.AJP:
+                            var ajp = new Ajp(fullPath);
                             break;
                         default:
                             throw new MyException($"不支持的文件格式:{header}");

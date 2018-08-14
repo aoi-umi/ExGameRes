@@ -94,7 +94,8 @@ namespace ExGameRes
             using (var fs = new FileStream(filePath, FileMode.Open))
             using (var br = new BinaryReader(fs))
             {
-                header = Encoding.Default.GetString(br.ReadBytes(4));
+                var bytes = br.ReadBytes(4);
+                header = BytesToString(bytes);
             }
 
             return header;
@@ -156,6 +157,21 @@ namespace ExGameRes
         {
             Encoding defaultEncoding = Encoding.Default;
             return encoding.GetString(defaultEncoding.GetBytes(str));
+        }
+
+        public static string BytesToString(byte[] bytes)
+        {
+            return BytesToString(bytes, Encoding.Default);
+        }
+
+        public static string BytesToString(byte[] bytes, Encoding encoding)
+        {
+            var str = string.Empty;
+            var index = bytes.ToList().FindIndex(b => b == 0);
+            if (index >= 0)
+                bytes = Helper.GetBytes(bytes, 0, index);
+            str = encoding.GetString(bytes);
+            return str;
         }
     }
 

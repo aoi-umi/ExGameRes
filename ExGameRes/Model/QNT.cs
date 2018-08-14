@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ExGameRes.Model
 {
-    public class QNT
+    public class Qnt
     {
         public uint Offset { get; set; }
         public uint Width { get; set; }
@@ -18,54 +18,54 @@ namespace ExGameRes.Model
         public uint AlphaTocLength { get; set; }
         private byte[] PixelData { get; set; }
         private byte[] AlphaData { get; set; }
-        private QNTHeader QNTheader { get; set; }
+        private QntHeader QntHeader { get; set; }
         private const int ZLIBBUF_MARGIN = 10240;
 
-        public QNT(Stream stream)
+        public Qnt(Stream stream)
         {
-            InitQNT(stream);
+            InitQnt(stream);
         }
 
-        public QNT(string filePath)
+        public Qnt(string filePath)
         {
             using (Stream stream = File.OpenRead(filePath))
             {
-                InitQNT(stream);
+                InitQnt(stream);
             }
         }
 
-        private void InitQNT(Stream stream)
+        private void InitQnt(Stream stream)
         {
-            QNTheader = new QNTHeader();
+            QntHeader = new QntHeader();
             using (BinaryReader br = new BinaryReader(stream))
             {
-                QNTheader.Signature = Encoding.Default.GetString(br.ReadBytes(4));
-                if (QNTheader.Signature.Substring(0, 3) != Config.Signature.QNT)
+                QntHeader.Signature = Helper.BytesToString(br.ReadBytes(4));
+                if (QntHeader.Signature.Substring(0, 3) != Config.Signature.QNT)
                     throw new MyException(Config.Signature.QNT, MyException.ErrorTypeEnum.FileTypeError);
-                QNTheader.Version = br.ReadUInt32();
-                if (QNTheader.Version == 0)
+                QntHeader.Version = br.ReadUInt32();
+                if (QntHeader.Version == 0)
                 {
-                    Offset = QNTheader.Offset = 48;
+                    Offset = QntHeader.Offset = 48;
                 }
                 else
                 {
-                    Offset = QNTheader.Offset = br.ReadUInt32();
+                    Offset = QntHeader.Offset = br.ReadUInt32();
                 }
-                QNTheader.X0 = br.ReadUInt32();
-                QNTheader.Y0 = br.ReadUInt32();
-                Width = QNTheader.Width = br.ReadUInt32();
-                Height = QNTheader.Height = br.ReadUInt32();
-                BitCount = QNTheader.BitCount = br.ReadUInt32();
-                QNTheader.RSV = br.ReadUInt32();
-                PixelTocLength = QNTheader.PixelTocLength = br.ReadUInt32();
-                AlphaTocLength = QNTheader.AlphaTocLength = br.ReadUInt32();
-                if (QNTheader.Version == 0)
+                QntHeader.X0 = br.ReadUInt32();
+                QntHeader.Y0 = br.ReadUInt32();
+                Width = QntHeader.Width = br.ReadUInt32();
+                Height = QntHeader.Height = br.ReadUInt32();
+                BitCount = QntHeader.BitCount = br.ReadUInt32();
+                QntHeader.RSV = br.ReadUInt32();
+                PixelTocLength = QntHeader.PixelTocLength = br.ReadUInt32();
+                AlphaTocLength = QntHeader.AlphaTocLength = br.ReadUInt32();
+                if (QntHeader.Version == 0)
                 {
-                    QNTheader.Unknow4 = br.ReadBytes(8);
+                    QntHeader.Unknow4 = br.ReadBytes(8);
                 }
                 else
                 {
-                    QNTheader.Unknow4 = br.ReadBytes(24);
+                    QntHeader.Unknow4 = br.ReadBytes(24);
                 }
                 PixelData = br.ReadBytes((int)PixelTocLength);
                 if (AlphaTocLength > 0)
@@ -73,7 +73,7 @@ namespace ExGameRes.Model
             }
         }
 
-        public static Byte[] ExtractQNT(QNT QNTFile)
+        public static Byte[] ExtractQNT(Qnt QNTFile)
         {
             Byte[] BMPHeader = new Byte[]{
                 0x42,0x4D,0x36,0x00,0x0C,0x00,0x00,0x00,
@@ -182,7 +182,7 @@ namespace ExGameRes.Model
             return imgData;
         }
 
-        private static Byte[] ExtractPixel(QNT QNTFile, bool FixWidth)
+        private static Byte[] ExtractPixel(Qnt QNTFile, bool FixWidth)
         {
             uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
             uint outTocBuffLength = size;
@@ -282,7 +282,7 @@ namespace ExGameRes.Model
             return truePic;
         }
 
-        private static Byte[] ExtractAlpha(QNT QNTFile)
+        private static Byte[] ExtractAlpha(Qnt QNTFile)
         {
             uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
             uint outTocBuffLength = size;
@@ -342,7 +342,7 @@ namespace ExGameRes.Model
         }
     }
 
-    public class QNTHeader
+    public class QntHeader
     {
         //4 bytes
         public string Signature { get; set; }

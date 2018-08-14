@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace ExGameRes.Model
 {
-    public class DCF
+    public class Dcf
     {
         //4bytes  dcf 0x20
         public string Signature1 { get; set; }
 
         //4bytes
-        public int DCFHeaderSize { get; set; }
+        public int DcfHeaderSize { get; set; }
 
         //4bytes
-        public byte[] DCFHeader { get; set; }
+        public byte[] DcfHeader { get; set; }
 
         //4bytes dfdl
         public string Signature2 { get; set; }
@@ -40,37 +40,37 @@ namespace ExGameRes.Model
 
 
         public byte[] MaskData { get; set; }
-        public DCF(Stream stream)
+        public Dcf(Stream stream)
         {
-            InitDCF(stream);
+            InitDcf(stream);
         }
 
-        public DCF(string filePath)
+        public Dcf(string filePath)
         {
             using (Stream stream = File.OpenRead(filePath))
             {
-                InitDCF(stream);
+                InitDcf(stream);
             }
         }
 
-        private void InitDCF(Stream stream)
+        private void InitDcf(Stream stream)
         {
             using (BinaryReader br = new BinaryReader(stream))
             {
-                Signature1 = Encoding.Default.GetString(br.ReadBytes(4));
+                Signature1 = Helper.BytesToString(br.ReadBytes(4));
                 if (Signature1.Substring(0, 3) != Config.Signature.DCF)
                     throw new MyException(Config.Signature.DCF, MyException.ErrorTypeEnum.FileTypeError);
-                DCFHeaderSize = br.ReadInt32();
-                DCFHeader = br.ReadBytes(DCFHeaderSize);
+                DcfHeaderSize = br.ReadInt32();
+                DcfHeader = br.ReadBytes(DcfHeaderSize);
 
-                Signature2 = Encoding.Default.GetString(br.ReadBytes(4));
+                Signature2 = Helper.BytesToString(br.ReadBytes(4));
                 DFDLSize = br.ReadInt32();
                 DFDLDataOrgSize = br.ReadInt32();
                 DFDLData = br.ReadBytes(DFDLSize - 4);
                 uint outSize = (uint)DFDLDataOrgSize;
                 MaskData = Helper.Decompress(DFDLData, ref outSize);
 
-                Signature3 = Encoding.Default.GetString(br.ReadBytes(4));
+                Signature3 = Helper.BytesToString(br.ReadBytes(4));
                 DCGDSize = br.ReadInt32();
                 DCGDData = br.ReadBytes(DCGDSize);
             }
