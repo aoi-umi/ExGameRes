@@ -10,6 +10,7 @@ namespace ExGameRes.Model
 {
     public class Qnt
     {
+        public string Ext { get; set; }
         public uint Offset { get; set; }
         public uint Width { get; set; }
         public uint Height { get; set; }
@@ -69,11 +70,18 @@ namespace ExGameRes.Model
                 }
                 PixelData = br.ReadBytes((int)PixelTocLength);
                 if (AlphaTocLength > 0)
+                {
                     AlphaData = br.ReadBytes((int)AlphaTocLength);
+                    Ext = "png";
+                }
+                else
+                {
+                    Ext = "bmp";
+                }
             }
         }
 
-        public static Byte[] ExtractQNT(Qnt QNTFile)
+        public static Byte[] ExtractQnt(Qnt qntFile)
         {
             Byte[] BMPHeader = new Byte[]{
                 0x42,0x4D,0x36,0x00,0x0C,0x00,0x00,0x00,
@@ -96,19 +104,19 @@ namespace ExGameRes.Model
 
             uint bmpHeaderSize = 14 + 40;
             uint pngHeaderSize = 8 + 25;
-            uint w = QNTFile.Width, h = QNTFile.Height;
+            uint w = qntFile.Width, h = qntFile.Height;
             uint lcount = (uint)((w * 3 + 3) & (~3));
             uint imageSize = lcount * h;
-            Byte[] Pixel = ExtractPixel(QNTFile, !(QNTFile.AlphaTocLength > 0));
+            Byte[] Pixel = ExtractPixel(qntFile, !(qntFile.AlphaTocLength > 0));
             Byte[] PixelWithAlpha = null;
-            Byte[] Alpha = QNTFile.AlphaTocLength > 0 ? ExtractAlpha(QNTFile) : null;
+            Byte[] Alpha = qntFile.AlphaTocLength > 0 ? ExtractAlpha(qntFile) : null;
             uint fileSize = 0;
             if (Alpha != null)
             {
                 lcount = w * 4;
                 imageSize = lcount * h;
                 ResetBytes(BMPHeader, 28, new Byte[] { 32 });
-                Alpha = ExtractAlpha(QNTFile);
+                Alpha = ExtractAlpha(qntFile);
             }
 
             Byte[] imgData = null;
@@ -182,17 +190,17 @@ namespace ExGameRes.Model
             return imgData;
         }
 
-        private static Byte[] ExtractPixel(Qnt QNTFile, bool FixWidth)
+        private static Byte[] ExtractPixel(Qnt qntFile, bool fixWidth)
         {
-            uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
+            uint size = qntFile.Width * qntFile.Height * qntFile.BitCount / 8 + ZLIBBUF_MARGIN;
             uint outTocBuffLength = size;
-            Byte[] outTocBuff = Helper.Decompress(QNTFile.PixelData, ref outTocBuffLength);
+            Byte[] outTocBuff = Helper.Decompress(qntFile.PixelData, ref outTocBuffLength);
 
             Byte[] pic = new Byte[outTocBuffLength];
             int i, j;
             uint x, y, w, h;
-            w = QNTFile.Width;
-            h = QNTFile.Height;
+            w = qntFile.Width;
+            h = qntFile.Height;
             j = 0;
             for (i = 2; i >= 0; i--)
             {
@@ -263,8 +271,8 @@ namespace ExGameRes.Model
                 }
             }
 
-            uint lcount = FixWidth ? (uint)((QNTFile.Width * 3 + 3) & (~3)) : QNTFile.Width * 3;
-            byte[] truePic = new byte[lcount * QNTFile.Height];
+            uint lcount = fixWidth ? (uint)((qntFile.Width * 3 + 3) & (~3)) : qntFile.Width * 3;
+            byte[] truePic = new byte[lcount * qntFile.Height];
             int offset = 0;
             for (i = 0; i < h; i++)
             {
@@ -274,7 +282,7 @@ namespace ExGameRes.Model
                     truePic[offset++] = pic[((h - 1 - i) * w + j) * 3 + 1];
                     truePic[offset++] = pic[((h - 1 - i) * w + j) * 3 + 0];
                 }
-                if (FixWidth)
+                if (fixWidth)
                 {
                     for (j = 0; j < lcount - w * 3; j++) truePic[offset++] = 0;
                 }
@@ -282,16 +290,16 @@ namespace ExGameRes.Model
             return truePic;
         }
 
-        private static Byte[] ExtractAlpha(Qnt QNTFile)
+        private static Byte[] ExtractAlpha(Qnt qntFile)
         {
-            uint size = QNTFile.Width * QNTFile.Height * QNTFile.BitCount / 8 + ZLIBBUF_MARGIN;
+            uint size = qntFile.Width * qntFile.Height * qntFile.BitCount / 8 + ZLIBBUF_MARGIN;
             uint outTocBuffLength = size;
-            Byte[] outTocBuff = Helper.Decompress(QNTFile.AlphaData, ref outTocBuffLength);
+            Byte[] outTocBuff = Helper.Decompress(qntFile.AlphaData, ref outTocBuffLength);
 
             Byte[] alpha = new Byte[outTocBuffLength];
             uint i, x, y, w, h;
-            w = QNTFile.Width;
-            h = QNTFile.Height;
+            w = qntFile.Width;
+            h = qntFile.Height;
 
             i = 1;
             if (w > 1)

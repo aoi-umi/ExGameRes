@@ -100,9 +100,9 @@ namespace ExGameRes
             else
             {
                 int index = GetCurrentIndex(listView, e.GetPosition);
-                if (listView.SelectedItems.Count > 0 && index >= 0 && index != FileList.IndexOf(listView.SelectedItems[0] as QNTFileInfoModel))
+                if (listView.SelectedItems.Count > 0 && index >= 0 && index != FileList.IndexOf(listView.SelectedItems[0] as ImageFileInfoModel))
                 {
-                    foreach (QNTFileInfoModel item in listView.SelectedItems)
+                    foreach (ImageFileInfoModel item in listView.SelectedItems)
                     {
                         FileList.Move(FileList.IndexOf(item), index);
                     }
@@ -125,57 +125,57 @@ namespace ExGameRes
         {
             BackgroundWorker bgWorker = sender as BackgroundWorker;
             bgWorker.ReportProgress(0);
-            bool isMergeDCF = (bool)args.Argument;
+            bool isMergeDdf = (bool)args.Argument;
             int i = 0;
-            Byte[] lastQNTData = null;
-            foreach (QNTFileInfoModel qntInfo in FileList)
+            Byte[] lastQntData = null;
+            foreach (ImageFileInfoModel imageInfo in FileList)
             {
                 try
                 {
-                    Qnt qnt = null;
-                    string fullPath = Path.Combine(qntInfo.Path, qntInfo.Filename);
+                    string ext = "";
+                    string fullPath = Path.Combine(imageInfo.Path, imageInfo.Filename);
                     string header = Helper.GetHeader(fullPath);
                     Byte[] bmpBuff = null;
-                    switch (header)
+                    if (header == Config.Signature.QNT)
                     {
-                        case Config.Signature.QNT:
-                            qnt = new Qnt(fullPath);
-                            bmpBuff = Qnt.ExtractQNT(qnt);
-                            if (isMergeDCF) lastQNTData = bmpBuff;
-                            break;
-                        case Config.Signature.DCF:
-                            Dcf dcf = new Dcf(fullPath);
-                            MemoryStream ms = new MemoryStream(dcf.DCGDData);
-                            qnt = new Qnt(ms);
-                            bmpBuff = Qnt.ExtractQNT(qnt);
-                            if (isMergeDCF && qnt.AlphaTocLength == 0)
-                            {
-                                if (lastQNTData == null)
-                                    throw new MyException("合并源为空");
-                                Helper.MergeBMPData(lastQNTData, bmpBuff, dcf.MaskData);
-                            }
-                            break;
-                        case Config.Signature.AJP:
-                            var ajp = new Ajp(fullPath);
-                            break;
-                        default:
-                            throw new MyException($"不支持的文件格式:{header}");
+                        var qnt = new Qnt(fullPath);
+                        bmpBuff = Qnt.ExtractQnt(qnt);
+                        if (isMergeDdf) lastQntData = bmpBuff;
+                        ext = qnt.Ext;
                     }
-                    Directory.CreateDirectory(qntInfo.NewPath);
-                    if (qnt.AlphaTocLength > 0)
+                    else if (header == Config.Signature.DCF)
                     {
-                        qntInfo.NewFilename = Path.Combine(qntInfo.NewPath, qntInfo.FilenameWithoutExt + ".png");
+                        Dcf dcf = new Dcf(fullPath);
+                        MemoryStream ms = new MemoryStream(dcf.DCGDData);
+                        var qnt = new Qnt(ms);
+                        bmpBuff = Qnt.ExtractQnt(qnt);
+                        if (isMergeDdf && qnt.AlphaTocLength == 0)
+                        {
+                            if (lastQntData == null)
+                                throw new MyException("合并源为空");
+                            Helper.MergeBMPData(lastQntData, bmpBuff, dcf.MaskData);
+                        }
+                        ext = qnt.Ext;
+                    }
+                    else if (header == Config.Signature.AJP)
+                    {
+                        var ajp = new Ajp(fullPath);
+                        bmpBuff = Ajp.ExtractAjp(ajp);
+                        ext = ajp.Ext;
                     }
                     else
                     {
-                        qntInfo.NewFilename = Path.Combine(qntInfo.NewPath, qntInfo.FilenameWithoutExt + ".bmp");
+                        throw new MyException($"不支持的文件格式:{header}");
                     }
-                    Helper.WriteBytesToFile(qntInfo.NewFilename, bmpBuff);
-                    qntInfo.Desc = "转换完毕";
+
+                    imageInfo.NewFilename = Path.Combine(imageInfo.NewPath, imageInfo.FilenameWithoutExt + "." + ext);                    
+                    Directory.CreateDirectory(imageInfo.NewPath);
+                    Helper.WriteBytesToFile(imageInfo.NewFilename, bmpBuff);
+                    imageInfo.Desc = "转换完毕";
                 }
                 catch (Exception ex)
                 {
-                    qntInfo.Desc = ex.Message;
+                    imageInfo.Desc = ex.Message;
                 }
                 ++i;
                 bgWorker.ReportProgress(i);
@@ -225,7 +225,7 @@ namespace ExGameRes
         {
             int extIndex = filename.LastIndexOf(".");
             string filenameWithoutExt = extIndex >= 0 ? filename.Substring(0, extIndex) : filename;
-            FileList.Add(new QNTFileInfoModel()
+            FileList.Add(new ImageFileInfoModel()
             {
                 Path = path,
                 NewPath = Path.Combine(path, "Output"),
@@ -267,9 +267,9 @@ namespace ExGameRes
         #endregion
     }
 
-    public class QNTFileInfoModel : INotifyPropertyChanged
+    public class ImageFileInfoModel : INotifyPropertyChanged
     {
-        public QNTFileInfoModel()
+        public ImageFileInfoModel()
         {
         }
 
