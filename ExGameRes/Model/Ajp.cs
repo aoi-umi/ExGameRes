@@ -1,4 +1,5 @@
-﻿using FreeImageAPI;
+﻿using ALDExplorer2.ImageFileFormats;
+using FreeImageAPI;
 using System;
 using System.IO;
 
@@ -70,13 +71,22 @@ namespace ExGameRes.Model
         public static byte[] ExtractAjp(Ajp ajpFile)
         {
             byte[] outData;
-            using (var ms = new MemoryStream())
-            using (var s = new MemoryStream(ajpFile.jpegData))
+            using (var ajpStream = new MemoryStream(ajpFile.jpegData))
             {
-                var jpegImage = new FreeImageBitmap(s, FREE_IMAGE_FORMAT.FIF_JPEG);
-                jpegImage.Save(ms, FREE_IMAGE_FORMAT.FIF_JPEG);
+                var jpegImage = new FreeImageBitmap(ajpStream, FREE_IMAGE_FORMAT.FIF_JPEG);
                 //pms
-                outData = ms.ToArray();
+                if (ajpFile.pmsData != null)
+                {
+                    FreeImageBitmap pmsImage = Pms.LoadImage(ajpFile.pmsData);
+                    jpegImage.ConvertColorDepth(FREE_IMAGE_COLOR_DEPTH.FICD_32_BPP);
+                    jpegImage.SetChannel(pmsImage, FREE_IMAGE_COLOR_CHANNEL.FICC_ALPHA);
+                }
+
+                using (var ms = new MemoryStream())
+                {
+                    jpegImage.Save(ms, ajpFile.pmsData == null ? FREE_IMAGE_FORMAT.FIF_JPEG : FREE_IMAGE_FORMAT.FIF_PNG);
+                    outData = ms.ToArray();
+                }
             }
             return outData;
         }

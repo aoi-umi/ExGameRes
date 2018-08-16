@@ -63,6 +63,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
@@ -101,6 +102,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ALDExplorer2\Extensions.cs" />
+    <Compile Include="ALDExplorer2\ImageConverter.cs" />
+    <Compile Include="ALDExplorer2\ImageFileFormats\Pms.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Controls\MainControl.cs" />
