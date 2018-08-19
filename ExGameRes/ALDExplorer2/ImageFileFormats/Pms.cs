@@ -9,18 +9,6 @@ using System.Drawing;
 
 namespace ALDExplorer2.ImageFileFormats
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct PmsHeaderRaw
-    {
-        public UInt16 Signature, Version, HeaderSize;
-        public byte ColorDepth, ShadowDepth;
-        public UInt16 IsSprite, PaletteBank;
-        public int Word0C;
-        public int X, Y;
-        public int Width, Height;
-        public int AddressOfData, AddressOfPalette, AddressOfComment;
-    }
-
     public class PmsHeader : ICloneable, IImageHeader
     {
         public int Signature;
@@ -215,9 +203,9 @@ namespace ALDExplorer2.ImageFileFormats
             {
                 return null;
             }
+            FreeImageBitmap bitmap;
             if (pmsHeader.ColorDepth == 16)
             {
-                //return null;
                 ushort[] imageData = GetImageData16Bit(pmsHeader, bytes);
                 byte[] shadowImageData = null;
                 if (pmsHeader.AddressOfPalette != 0)
@@ -227,88 +215,80 @@ namespace ALDExplorer2.ImageFileFormats
                         shadowImageData = GetImageData8Bit(pmsHeader, bytes, pmsHeader.AddressOfPalette);
                     }
                 }
-                FreeImageBitmap bitmap;
-                unsafe
+                int[] imageData2 = new int[pmsHeader.Width * pmsHeader.Height];
+
+                int length = imageData2.Length;
+                if (shadowImageData == null)
                 {
-                    int[] imageData2 = new int[pmsHeader.Width * pmsHeader.Height];
-
-                    fixed (int* img32 = imageData2)
+                    for (int i = 0; i < length; i++)
                     {
-                        fixed (ushort* img16 = imageData)
+                        int p = imageData[i];
+                        byte a = 0xFF;
+                        unchecked
                         {
-                            int length = imageData2.Length;
-                            if (shadowImageData == null)
-                            {
-                                for (int i = 0; i < length; i++)
-                                {
-                                    int p = img16[i];
-                                    byte a = 0xFF;
-                                    unchecked
-                                    {
-                                        int r = ((p >> 0) & 0x1F);
-                                        int g = ((p >> 5) & 0x3F);
-                                        int b = ((p >> 11) & 0x1F);
+                            int r = ((p >> 0) & 0x1F);
+                            int g = ((p >> 5) & 0x3F);
+                            int b = ((p >> 11) & 0x1F);
 
-                                        r = (r * 0x839CE + 0x8000) >> 16;
-                                        g = (g * 0x40C30 + 0x8000) >> 16;
-                                        b = (b * 0x839CE + 0x8000) >> 16;
+                            r = (r * 0x839CE + 0x8000) >> 16;
+                            g = (g * 0x40C30 + 0x8000) >> 16;
+                            b = (b * 0x839CE + 0x8000) >> 16;
 
-                                        p = (r << 0) |
-                                            (g << 8) |
-                                            (b << 16) |
-                                            (a << 24);
-                                    }
-                                    img32[i] = p;
-                                }
-                            }
-                            else
-                            {
-                                fixed (byte* img8 = shadowImageData)
-                                {
-                                    for (int i = 0; i < length; i++)
-                                    {
-                                        int p = img16[i];
-                                        byte a = img8[i];
-                                        unchecked
-                                        {
-                                            int r = ((p >> 0) & 0x1F);
-                                            int g = ((p >> 5) & 0x3F);
-                                            int b = ((p >> 11) & 0x1F);
-
-                                            r = (r * 0x839CE + 0x8000) >> 16;
-                                            g = (g * 0x40C30 + 0x8000) >> 16;
-                                            b = (b * 0x839CE + 0x8000) >> 16;
-
-                                            p = (r << 0) |
-                                                (g << 8) |
-                                                (b << 16) |
-                                                (a << 24);
-                                        }
-                                        img32[i] = p;
-                                    }
-                                }
-                            }
-                            bitmap = new FreeImageBitmap(pmsHeader.Width, pmsHeader.Height, pmsHeader.Width * 4, 32, FREE_IMAGE_TYPE.FIT_BITMAP, (IntPtr)img32);
-
-                            //bitmap = new FreeImageBitmap(pmsHeader.width, pmsHeader.height, pmsHeader.width * 2, 16, FREE_IMAGE_TYPE.FIT_BITMAP, (IntPtr)img16);
+                            p = (r << 0) |
+                                (g << 8) |
+                                (b << 16) |
+                                (a << 24);
                         }
+                        imageData2[i] = p;
                     }
                 }
-                bitmap.Tag = pmsHeader;
-                bitmap.Comment = pmsHeader.GetComment();
-                return bitmap;
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        int p = imageData[i];
+                        byte a = shadowImageData[i];
+                        unchecked
+                        {
+                            int r = ((p >> 0) & 0x1F);
+                            int g = ((p >> 5) & 0x3F);
+                            int b = ((p >> 11) & 0x1F);
+
+                            r = (r * 0x839CE + 0x8000) >> 16;
+                            g = (g * 0x40C30 + 0x8000) >> 16;
+                            b = (b * 0x839CE + 0x8000) >> 16;
+
+                            p = (r << 0) |
+                                (g << 8) |
+                                (b << 16) |
+                                (a << 24);
+                        }
+                        imageData2[i] = p;
+                    }
+
+                }
+                var size = Marshal.SizeOf(imageData2[0]);
+                var pnt = Marshal.AllocHGlobal(size);
+                try
+                {
+                    Marshal.Copy(imageData2, 0, pnt, imageData2.Length);
+                    bitmap = new FreeImageBitmap(pmsHeader.Width, pmsHeader.Height, pmsHeader.Width * 4, 32, FREE_IMAGE_TYPE.FIT_BITMAP, pnt);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(pnt);
+                }
             }
             else
             {
                 byte[] imageData;
                 imageData = GetImageData8Bit(pmsHeader, bytes);
-                FreeImageBitmap bitmap = new FreeImageBitmap(pmsHeader.Width, pmsHeader.Height, pmsHeader.Width, 8, FREE_IMAGE_TYPE.FIT_BITMAP, imageData);
+                bitmap = new FreeImageBitmap(pmsHeader.Width, pmsHeader.Height, pmsHeader.Width, 8, FREE_IMAGE_TYPE.FIT_BITMAP, imageData);
                 GetPalette(bitmap.Palette, pmsHeader, bytes);
-                bitmap.Tag = pmsHeader;
-                bitmap.Comment = pmsHeader.GetComment();
-                return bitmap;
             }
-
+            bitmap.Tag = pmsHeader;
+            bitmap.Comment = pmsHeader.GetComment();
+            return bitmap;
         }
 
         public static void SaveImage(Stream stream, FreeImageBitmap bitmap)
@@ -632,11 +612,6 @@ namespace ALDExplorer2.ImageFileFormats
                 length = dest.Length - destIndex;
             }
             Array.Copy(src, srcIndex, dest, destIndex, length);
-
-            //for (int i = 0; i < length; i++)
-            //{
-            //    dest[destIndex + i] = src[srcIndex + i];
-            //}
         }
 
         static void memset(byte[] bytes, int index, byte value, int count)
@@ -668,7 +643,7 @@ namespace ALDExplorer2.ImageFileFormats
 
             for (y = 0; y < pms.Height; y++)
             {
-                for (x = 0; x < pms.Width; )
+                for (x = 0; x < pms.Width;)
                 {
                     int a0 = address;
                     loc = y * scanline + x;
@@ -733,7 +708,7 @@ namespace ALDExplorer2.ImageFileFormats
 
             for (y = 0; y < pmsHeader.Height; y++)
             {
-                for (x = 0; x < pmsHeader.Width; )
+                for (x = 0; x < pmsHeader.Width;)
                 {
                     loc = y * scanline + x;
                     c0 = bytes[bytePosition++];
@@ -810,102 +785,7 @@ namespace ALDExplorer2.ImageFileFormats
                     }
                 }
             }
-            return pic;
-            //ushort[] pic = new ushort[pmsHeader.width * pmsHeader.height];
-            //int c0, c1, pc0, pc1;
-            //int x, y, i, l, loc;
-            //int position = 0;
-            //int scanline = pmsHeader.width;
-
-            //for (y = 0; y < pmsHeader.height; y++)
-            //{
-            //    for (x = 0; x < pmsHeader.width; )
-            //    {
-            //        loc = y * scanline + x;
-            //        c0 = bytes[position++];
-            //        if (c0 <= 0xf7)
-            //        {
-            //            c1 = bytes[position++]; x++;
-            //            pic[loc] = (ushort)(c0 | (c1 << 8));
-            //        }
-            //        else if (c0 == 0xff)
-            //        {
-            //            c1 = bytes[position++];
-            //            //if (loc - scanline < 0)
-            //            //{
-            //            //    pic[loc] = (ushort)(c0 | (c1 << 8));
-            //            //    x++;
-            //            //}
-            //            //else
-            //            {
-            //                l = c1 + 2; x += l; position++;
-            //                for (i = 0; i < l; i++)
-            //                {
-            //                    pic[loc + i] = pic[loc + i - scanline];
-            //                }
-            //            }
-            //        }
-            //        else if (c0 == 0xfe)
-            //        {
-            //            l = bytes[position] + 2; x += l; position++;
-            //            for (i = 0; i < l; i++)
-            //            {
-            //                pic[loc + i] = pic[loc + i - scanline * 2];
-            //            }
-            //        }
-            //        else if (c0 == 0xfd)
-            //        {
-            //            l = bytes[position] + 3; x += l; position++;
-            //            c0 = bytes[position++]; c1 = bytes[position++];
-            //            pc0 = c0 | (c1 << 8);
-            //            for (i = 0; i < l; i++)
-            //            {
-            //                pic[loc + i] = (ushort)pc0;
-            //            }
-            //        }
-            //        else if (c0 == 0xfc)
-            //        {
-            //            l = (bytes[position] + 2) * 2; x += l; position++;
-            //            c0 = bytes[position++]; c1 = bytes[position++]; pc0 = c0 | (c1 << 8);
-            //            c0 = bytes[position++]; c1 = bytes[position++]; pc1 = c0 | (c1 << 8);
-            //            for (i = 0; i < l; i += 2)
-            //            {
-            //                pic[loc + i] = (ushort)pc0;
-            //                pic[loc + i + 1] = (ushort)pc1;
-            //            }
-            //        }
-            //        else if (c0 == 0xfb)
-            //        {
-            //            x++;
-            //            pic[loc] = pic[loc - scanline - 1];
-            //        }
-            //        else if (c0 == 0xfa)
-            //        {
-            //            x++;
-            //            pic[loc] = pic[loc - scanline + 1];
-            //        }
-            //        else if (c0 == 0xf9)
-            //        {
-            //            l = bytes[position] + 1; x += l; position++;
-            //            c0 = bytes[position++]; c1 = bytes[position++];
-            //            pc0 = ((c0 & 0xe0) << 8) + ((c0 & 0x18) << 6) + ((c0 & 0x07) << 2);
-            //            pc1 = ((c1 & 0xc0) << 5) + ((c1 & 0x3c) << 3) + (c1 & 0x03);
-            //            pic[loc] = (ushort)(pc0 + pc1);
-            //            for (i = 1; i < l; i++)
-            //            {
-            //                c1 = bytes[position++];
-            //                pc1 = ((c1 & 0xc0) << 5) + ((c1 & 0x3c) << 3) + (c1 & 0x03);
-            //                pic[loc + i] = (ushort)(pc0 | pc1);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            c0 = bytes[position++]; c1 = bytes[position++]; x++;
-            //            pic[loc] = (ushort)(c0 | (c1 << 8));
-            //        }
-            //    }
-            //}
-            //return pic;
+            return pic;          
         }
 
         internal static void SaveImageData8Bit(Stream stream, FreeImageBitmap bitmap)

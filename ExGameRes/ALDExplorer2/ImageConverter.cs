@@ -362,38 +362,5 @@ namespace ALDExplorer2
             }
             return bytes.ToArray();
         }
-
-        public static unsafe string FixedBytesToString(byte* bytes, int bufferLength, Encoding encoding)
-        {
-            unsafe
-            {
-                int strLen = 0;
-                {
-                    int i;
-                    for (i = 0; i < bufferLength; i++)
-                    {
-                        if (bytes[i] == 0)
-                        {
-                            break;
-                        }
-                    }
-                    strLen = i;
-                }
-                byte[] fileNameBytes = new byte[strLen];
-                Marshal.Copy((IntPtr)bytes, fileNameBytes, 0, strLen);
-                return encoding.GetString(fileNameBytes);
-            }
-        }
-
-        public static unsafe void StringToFixedBytes(byte* bytes, int bufferLength, string str, Encoding encoding)
-        {
-            unsafe
-            {
-                byte[] fileNameBytes = encoding.GetBytes(str);
-                int lengthToCopy = Math.Min(fileNameBytes.Length, bufferLength);
-                Marshal.Copy(fileNameBytes, 0, (IntPtr)bytes, lengthToCopy);
-            }
-
-        }
     }
 }

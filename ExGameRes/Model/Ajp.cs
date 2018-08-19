@@ -73,18 +73,26 @@ namespace ExGameRes.Model
             byte[] outData;
             using (var ajpStream = new MemoryStream(ajpFile.jpegData))
             {
-                var jpegImage = new FreeImageBitmap(ajpStream, FREE_IMAGE_FORMAT.FIF_JPEG);
+                var jpegImage = new FreeImageBitmap(ajpStream, FREE_IMAGE_FORMAT.FIF_JPEG);    
+
                 //pms
                 if (ajpFile.pmsData != null)
                 {
-                    FreeImageBitmap pmsImage = Pms.LoadImage(ajpFile.pmsData);
-                    jpegImage.ConvertColorDepth(FREE_IMAGE_COLOR_DEPTH.FICD_32_BPP);
-                    jpegImage.SetChannel(pmsImage, FREE_IMAGE_COLOR_CHANNEL.FICC_ALPHA);
+                    var pmsImage = Pms.LoadImage(ajpFile.pmsData);
+                    if (pmsImage != null)
+                    {
+                        jpegImage.ConvertColorDepth(FREE_IMAGE_COLOR_DEPTH.FICD_32_BPP);
+                        jpegImage.SetChannel(pmsImage, FREE_IMAGE_COLOR_CHANNEL.FICC_ALPHA);
+                        ajpFile.Ext = "png";
+                    }
+                    else
+                    {
+                    }
                 }
 
                 using (var ms = new MemoryStream())
                 {
-                    jpegImage.Save(ms, ajpFile.pmsData == null ? FREE_IMAGE_FORMAT.FIF_JPEG : FREE_IMAGE_FORMAT.FIF_PNG);
+                    jpegImage.Save(ms, ajpFile.Ext == "jpg" ? FREE_IMAGE_FORMAT.FIF_JPEG : FREE_IMAGE_FORMAT.FIF_PNG);
                     outData = ms.ToArray();
                 }
             }
