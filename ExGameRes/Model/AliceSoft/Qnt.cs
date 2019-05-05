@@ -40,8 +40,8 @@ namespace ExGameRes.Model.AliceSoft
             QntHeader = new QntHeader();
             using (var br = new BinaryReader(stream))
             {
-                QntHeader.Signature = Helper.BytesToString(br.ReadBytes(4));
-                if (QntHeader.Signature.Substring(0, 3) != Config.Signature.QNT)
+                QntHeader.Signature = Helper.BytesToString(br.ReadBytes(4)).Substring(0, 3);
+                if (QntHeader.Signature != Config.Signature.QNT)
                     throw new MyException(Config.Signature.QNT, MyException.ErrorTypeEnum.FileTypeError);
                 QntHeader.Version = br.ReadUInt32();
                 if (QntHeader.Version == 0)

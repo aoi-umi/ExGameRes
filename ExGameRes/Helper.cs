@@ -67,7 +67,8 @@ namespace ExGameRes
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "提示");
+                var myEx = ex as MyException;
+                MessageBox.Show(myEx != null ? myEx.Message : ex.Message, "提示");
             }
         }
 
@@ -142,6 +143,16 @@ namespace ExGameRes
                 bytes = Helper.GetBytes(bytes, 0, index);
             str = encoding.GetString(bytes);
             return str;
+        }
+
+        public static T ByteToStruct<T>(byte[] bytes)
+        {
+            int structSize = Marshal.SizeOf(typeof(T));
+            IntPtr ptemp = Marshal.AllocHGlobal(structSize);
+            Marshal.Copy(bytes, 0, ptemp, structSize);
+            T rs = (T)Marshal.PtrToStructure(ptemp, typeof(T));
+            Marshal.FreeHGlobal(ptemp);
+            return rs;
         }
     }
 

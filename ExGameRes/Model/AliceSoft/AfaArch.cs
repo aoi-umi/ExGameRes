@@ -14,8 +14,8 @@ namespace ExGameRes.Model.AliceSoft
         public uint OriginalTocLength { get; private set; }
         public List<AfaEntryInfo> EntryList { get; private set; }
         private Byte[] InfoData { get; set; }
-        private AFAHDR1 AfaHeader1 { get; set; }
-        private AFAHDR2 AfaHeader2 { get; set; }
+        private AfaHdr1 AfaHeader1 { get; set; }
+        private AfaHdr2 AfaHeader2 { get; set; }
 
         public AfaArch(Stream stream)
         {
@@ -31,8 +31,8 @@ namespace ExGameRes.Model.AliceSoft
         }
         private void InitAfa(Stream stream)
         {
-            AfaHeader1 = new AFAHDR1();
-            AfaHeader2 = new AFAHDR2();
+            AfaHeader1 = new AfaHdr1();
+            AfaHeader2 = new AfaHdr2();
             using (BinaryReader br = new BinaryReader(stream))
             {
                 AfaHeader1.Signature = Helper.BytesToString(br.ReadBytes(4));
@@ -91,7 +91,7 @@ namespace ExGameRes.Model.AliceSoft
         }
     }
 
-    public class AFAHDR1
+    public class AfaHdr1
     {
         //4 bytes
         public string Signature { get; set; }
@@ -107,7 +107,7 @@ namespace ExGameRes.Model.AliceSoft
         public uint Offset { get; set; }
     }
 
-    public class AFAHDR2
+    public class AfaHdr2
     {
         //4 bytes
         public string Signature { get; set; }
