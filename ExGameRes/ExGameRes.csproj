@@ -111,6 +111,7 @@
     <Compile Include="Model\AliceSoft\Ajp.cs" />
     <Compile Include="Model\AliceSoft\AldArch.cs" />
     <Compile Include="Model\AliceSoft\Dcf.cs" />
+    <Compile Include="Model\ImageModel.cs" />
     <Compile Include="Model\MainModel.cs" />
     <Compile Include="Model\AliceSoft\Qnt.cs" />
     <Compile Include="View\AboutView.xaml.cs">

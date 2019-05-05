@@ -108,56 +108,19 @@ namespace ExGameRes
             return header;
         }
 
-        public static void MergeBMPData(Byte[] src, Byte[] dest, Byte[] mask = null)
-        {
-            int bmpHeaderSize = 54;
-            if (src.Length != dest.Length)
-                throw new MyException("src与dest长度不相等");
-            if (mask == null)
-            {
-                for (int i = bmpHeaderSize; i < src.Length; i++)
-                {
-                    if (dest[i] == 0 && src[i] != 0) dest[i] = src[i];
-                }
-            }
-            else
-            {
-                int maskSize = BitConverter.ToInt32(Helper.GetBytes(mask, 0, 4), 0);
-                int width = BitConverter.ToInt32(Helper.GetBytes(src, 18, 4), 0);
-                int height = BitConverter.ToInt32(Helper.GetBytes(src, 22, 4), 0);
-                if (maskSize != mask.Length - 4 || (mask.Length - 4) * 3 * 0x100 != (src.Length - bmpHeaderSize))
-                    throw new MyException("mask数据有误", MyException.ErrorTypeEnum.DefaultError);
-
-                int maskBitSize = 0x10;
-                int maskWidth = width / maskBitSize;
-                int maskHeight = height / maskBitSize;
-                for (int i = 0; i < maskHeight; i++)
-                {
-                    for (int j = 0; j < maskWidth; j++)
-                    {
-                        if (mask[4 + i * maskWidth + j] != 1)
-                            continue;
-
-                        for (int y = 0; y < maskBitSize; y++)
-                        {
-                            for (int x = 0; x < maskBitSize; x++)
-                            {
-                                int tagPos = bmpHeaderSize + ((maskHeight - i - 1) * width * maskBitSize + j * maskBitSize + y * width + x) * 3;
-                                dest[tagPos] = src[tagPos];
-                                dest[tagPos + 1] = src[tagPos + 1];
-                                dest[tagPos + 2] = src[tagPos + 2];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         public static Byte[] GetBytes(Byte[] src, int startPos, int length)
         {
             Byte[] b = new Byte[length];
             Array.Copy(src, startPos, b, 0, length);
             return b;
+        }
+
+        public static void ResetBytes(Byte[] src, int startPos, Byte[] newBytes)
+        {
+            for (int i = 0; i < newBytes.Length; i++)
+            {
+                src[startPos + i] = newBytes[i];
+            }
         }
 
         public static string Encode(string str, Encoding encoding)

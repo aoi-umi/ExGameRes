@@ -38,7 +38,7 @@ namespace ExGameRes.Model.AliceSoft
         private void InitQnt(Stream stream)
         {
             QntHeader = new QntHeader();
-            using (BinaryReader br = new BinaryReader(stream))
+            using (var br = new BinaryReader(stream))
             {
                 QntHeader.Signature = Helper.BytesToString(br.ReadBytes(4));
                 if (QntHeader.Signature.Substring(0, 3) != Config.Signature.QNT)
@@ -82,109 +82,31 @@ namespace ExGameRes.Model.AliceSoft
         }
 
         public static Byte[] ExtractQnt(Qnt qntFile)
-        {
-            Byte[] BMPHeader = new Byte[]{
-                0x42,0x4D,0x36,0x00,0x0C,0x00,0x00,0x00,
-                0x00,0x00,0x36,0x00,0x00,0x00,0x28,0x00,
-                0x00,0x00,0x00,0x02,0x00,0x00,0x00,0x02,
-                0x00,0x00,0x01,0x00,0x18,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00};
-            Byte[] PNGHeader = new Byte[] {
-                0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,
-                0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52,//[0x08-0x0b]IHDR lenght [0x0c-0x1c]IHDR
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//[0x10-0x13]width [0x14-0x17]height
-                0x08,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00//[0x1d-0x20]IHRD crc
-            };
-            Byte[] IEND = new Byte[] {
-                0x00,0x00,0x00,0x00,0x49,0x45,0x4e,0x44,
-                0xae,0x42,0x60,0x82
-            };
-
-            uint bmpHeaderSize = 14 + 40;
-            uint pngHeaderSize = 8 + 25;
+        {                       
             uint w = qntFile.Width, h = qntFile.Height;
-            uint lcount = (uint)((w * 3 + 3) & (~3));
-            uint imageSize = lcount * h;
-            Byte[] Pixel = ExtractPixel(qntFile, !(qntFile.AlphaTocLength > 0));
-            Byte[] PixelWithAlpha = null;
-            Byte[] Alpha = qntFile.AlphaTocLength > 0 ? ExtractAlpha(qntFile) : null;
-            uint fileSize = 0;
-            if (Alpha != null)
+            //uint rowByteCount = (uint)((w * 3 + 3) & (~3));
+            //uint imageSize = rowByteCount * h;
+            Byte[] pixel = ExtractPixel(qntFile, !(qntFile.AlphaTocLength > 0));
+            Byte[] alpha = qntFile.AlphaTocLength > 0 ? ExtractAlpha(qntFile) : null;
+            //uint fileSize = 0;
+            if (alpha != null)
             {
-                lcount = w * 4;
-                imageSize = lcount * h;
-                ResetBytes(BMPHeader, 28, new Byte[] { 32 });
-                Alpha = ExtractAlpha(qntFile);
+                //rowByteCount = w * 4;
+                //imageSize = rowByteCount * h;
+                //ResetBytes(BMPHeader, 28, new Byte[] { 32 });
+                alpha = ExtractAlpha(qntFile);
             }
 
             Byte[] imgData = null;
-            Byte[] WidthBytes = BitConverter.GetBytes(w);
-            Byte[] HeightBytes = BitConverter.GetBytes(h);
-            if (Alpha == null)
+            if (alpha == null)
             {
-                fileSize = bmpHeaderSize + imageSize;
-                ResetBytes(BMPHeader, 2, BitConverter.GetBytes(bmpHeaderSize + imageSize));
-                ResetBytes(BMPHeader, 10, BitConverter.GetBytes(bmpHeaderSize));
-                ResetBytes(BMPHeader, 18, WidthBytes);
-                ResetBytes(BMPHeader, 22, HeightBytes);
-                ResetBytes(BMPHeader, 34, BitConverter.GetBytes(imageSize));
-                imgData = new Byte[fileSize];
-                BMPHeader.CopyTo(imgData, 0);
-                Pixel.CopyTo(imgData, bmpHeaderSize);
+                var bmpModel = new BmpModel();
+                imgData = bmpModel.GetData(w, h, pixel);
             }
             else
             {
-                uint crc32 = 0;
-                Byte[] CRC32Bytes = null;
-                fileSize = pngHeaderSize + (uint)IEND.Length;
-
-                Array.Reverse(WidthBytes);
-                Array.Reverse(HeightBytes);
-                ResetBytes(PNGHeader, 0x10, WidthBytes);
-                ResetBytes(PNGHeader, 0x14, HeightBytes);
-                crc32 = Helper.CRC32(Helper.GetBytes(PNGHeader, 0x0c, 17));
-                CRC32Bytes = BitConverter.GetBytes(crc32);
-                Array.Reverse(CRC32Bytes);
-                ResetBytes(PNGHeader, 0x1d, CRC32Bytes);
-
-                PixelWithAlpha = new Byte[imageSize + h];
-
-                for (int i = 0, y = 0; i < h; i++)
-                {
-                    Array.Copy(new Byte[] { 0x00 }, 0, PixelWithAlpha, y * (lcount + 1), 1);
-                    y++;
-                    for (int j = 0, x = 0; j < w; j++, x++)
-                    {
-                        int currAlphaPos = (int)((h - i - 1) * w + j);
-                        int currPixelPos = currAlphaPos * 3;
-                        Byte b = Pixel[currPixelPos + 2];
-                        Pixel[currPixelPos + 2] = Pixel[currPixelPos];
-                        Pixel[currPixelPos] = b;
-                        Array.Copy(Pixel, currPixelPos, PixelWithAlpha, (i * w + j) * 4 + y, 3);
-                        Array.Copy(Alpha, currAlphaPos, PixelWithAlpha, (i * w + j) * 4 + 3 + y, 1);
-                    }
-                }
-                uint compressLength = (uint)PixelWithAlpha.Length;
-                Byte[] compressBytes = Helper.Compress(PixelWithAlpha, ref compressLength);
-                Byte[] IDAT = new Byte[compressLength + 12];
-                Byte[] compressLengthBytes = BitConverter.GetBytes(compressLength);
-                crc32 = Helper.CRC32(compressLengthBytes);
-                CRC32Bytes = BitConverter.GetBytes(crc32);
-                Array.Reverse(CRC32Bytes);
-                Array.Reverse(compressLengthBytes);
-
-                Array.Copy(compressLengthBytes, 0, IDAT, 0, 4);
-                Array.Copy(new Byte[] { 0x49, 0x44, 0x41, 0x54 }, 0, IDAT, 4, 4);//IDAT
-                Array.Copy(compressBytes, 0, IDAT, 8, compressLength);
-                Array.Copy(CRC32Bytes, 0, IDAT, 8 + compressLength, 4);
-
-                fileSize += compressLength + 12;
-                imgData = new Byte[fileSize];
-                Array.Copy(PNGHeader, 0, imgData, 0, pngHeaderSize);
-                Array.Copy(IDAT, 0, imgData, pngHeaderSize, IDAT.Length);
-                Array.Copy(IEND, 0, imgData, pngHeaderSize + IDAT.Length, IEND.Length);
+                var pngModel = new PngModel();
+                imgData = pngModel.GetData(w, h, pixel, alpha);                
             }
 
             return imgData;
@@ -339,14 +261,6 @@ namespace ExGameRes.Model.AliceSoft
                 }
             }
             return trueAlpha;
-        }
-
-        private static void ResetBytes(Byte[] src, int startPos, Byte[] newBytes)
-        {
-            for (int i = 0; i < newBytes.Length; i++)
-            {
-                src[startPos + i] = newBytes[i];
-            }
         }
     }
 

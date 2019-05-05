@@ -1,4 +1,5 @@
 ﻿using ExGameRes.Model.AliceSoft;
+using ExGameRes.Model;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -144,7 +145,7 @@ namespace ExGameRes
                         {
                             if (lastQntData == null)
                                 throw new MyException("合并源为空");
-                            Helper.MergeBMPData(lastQntData, bmpBuff, dcf.MaskData);
+                            ImageModel.MergeBMPData(lastQntData, bmpBuff, dcf.MaskData);
                         }
                         ext = qnt.Ext;
                     }
