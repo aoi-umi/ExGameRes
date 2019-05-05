@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExGameRes.Model
+namespace ExGameRes.Model.AliceSoft
 {
     public class Dcf
     {

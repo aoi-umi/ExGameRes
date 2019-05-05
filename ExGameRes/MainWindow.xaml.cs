@@ -1,4 +1,5 @@
 ﻿using ExGameRes.Model;
+using ExGameRes.Model.AliceSoft;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

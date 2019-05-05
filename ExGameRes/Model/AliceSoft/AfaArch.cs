@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace ExGameRes.Model
+namespace ExGameRes.Model.AliceSoft
 {
     public class AfaArch
     {

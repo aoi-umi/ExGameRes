@@ -3,7 +3,7 @@ using FreeImageAPI;
 using System;
 using System.IO;
 
-namespace ExGameRes.Model
+namespace ExGameRes.Model.AliceSoft
 {
     public class Ajp
     {

@@ -14,19 +14,31 @@ namespace ExGameRes
 {
     public static class Helper
     {
-        [DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int uncompress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+        //[DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
+        //private static extern int uncompress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
 
-        [DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int compress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+        //[DllImport("zlib1.dll", CallingConvention = CallingConvention.Cdecl)]
+        //private static extern int compress(Byte[] dest, ref uint destLen, Byte[] source, uint sourceLen);
+
+        //private static Byte[] CompressV1(Byte[] source, ref uint destLen)
+        //{
+        //    Byte[] dest = new Byte[destLen];
+        //    int result = compress(dest, ref destLen, source, (uint)source.Length);
+        //    if (result < 0)
+        //        throw new Exception("压缩出错,错误代码:" + result);
+        //    return dest;
+        //}
+        //private static Byte[] DecompressV1(Byte[] source, ref uint destLen)
+        //{
+        //    var dest = new Byte[destLen];
+        //    int result = uncompress(dest, ref destLen, source, (uint)source.Length);
+        //    if (result < 0)
+        //        throw new Exception("解压出错,错误代码:" + result);
+        //    return dest;
+        //}
 
         public static Byte[] Compress(Byte[] source, ref uint destLen)
         {
-            //Byte[] dest = new Byte[destLen];
-            //int result = compress(dest, ref destLen, source, (uint)source.Length);
-            //if (result < 0)
-            //    throw new Exception("压缩出错,错误代码:" + result);
-            //return dest;
             var dest = ZlibStream.CompressBuffer(source);
             destLen = (uint)dest.Length;
             return dest;
@@ -34,11 +46,6 @@ namespace ExGameRes
 
         public static Byte[] Decompress(Byte[] source, ref uint destLen)
         {
-            //var dest = new Byte[destLen];
-            //int result = uncompress(dest, ref destLen, source, (uint)source.Length);
-            //if (result < 0)
-            //    throw new Exception("解压出错,错误代码:" + result);
-            //return dest;
             var dest = ZlibStream.UncompressBuffer(source);
             destLen = (uint)dest.Length;
             return dest;
